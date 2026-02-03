@@ -1,5 +1,5 @@
 import pytest
-from pytest_mock_resources import PostgresConfig, create_postgres_fixture
+from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import text
 
 from sqlalchemy_declarative_extensions import Functions
@@ -11,8 +11,6 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import (
 from sqlalchemy_declarative_extensions.function.compare import compare_functions
 
 pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
-
-
 
 
 @pytest.mark.parametrize(

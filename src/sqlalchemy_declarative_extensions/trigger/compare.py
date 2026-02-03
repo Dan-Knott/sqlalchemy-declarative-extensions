@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import fnmatch
 from dataclasses import dataclass
-from typing import Union
+from typing import Sequence, Union
 
 from sqlalchemy.engine import Connection
 
@@ -53,7 +54,11 @@ def compare_triggers(connection: Connection, triggers: Triggers) -> list[Operati
     triggers_by_name = {r.name: r for r in triggers.triggers}
     expected_trigger_names = set(triggers_by_name)
 
-    existing_triggers = get_triggers(connection)
+    raw_existing_triggers = get_triggers(connection)
+    existing_triggers = filter_triggers(
+        raw_existing_triggers, exclude=triggers.ignore, include=triggers.include
+    )
+
     existing_triggers_by_name = {r.name: r for r in existing_triggers}
     existing_trigger_names = set(existing_triggers_by_name)
 
@@ -77,3 +82,17 @@ def compare_triggers(connection: Connection, triggers: Triggers) -> list[Operati
             result.append(DropTriggerOp(trigger))
 
     return result
+
+
+def filter_triggers(
+    triggers: Sequence[Trigger], *, exclude: list[str], include: list[str] | None
+) -> list[Trigger]:
+    return [
+        t
+        for t in triggers
+        if (
+            include is None
+            or any(fnmatch.fnmatch(t.name, inclusion) for inclusion in include)
+        )
+        and not any(fnmatch.fnmatch(t.name, exclusion) for exclusion in exclude)
+    ]

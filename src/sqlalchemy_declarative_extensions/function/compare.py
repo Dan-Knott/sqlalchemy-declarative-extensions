@@ -55,7 +55,9 @@ def compare_functions(connection: Connection, functions: Functions) -> list[Oper
     expected_function_names = set(functions_by_name)
 
     raw_existing_functions = get_functions(connection)
-    existing_functions = filter_functions(raw_existing_functions, functions.ignore)
+    existing_functions = filter_functions(
+        raw_existing_functions, exclude=functions.ignore, include=functions.include
+    )
     existing_functions_by_name = {
         f.qualified_name: f.normalize() for f in existing_functions
     }
@@ -93,12 +95,18 @@ def compare_functions(connection: Connection, functions: Functions) -> list[Oper
 
 
 def filter_functions(
-    functions: Sequence[Function], exclude: list[str]
+    functions: Sequence[Function], *, exclude: list[str], include: list[str] | None
 ) -> list[Function]:
     return [
         f
         for f in functions
-        if not any(
+        if (
+            include is None
+            or any(
+                fnmatch.fnmatch(f.qualified_name, inclusion) for inclusion in include
+            )
+        )
+        and not any(
             fnmatch.fnmatch(f.qualified_name, exclusion) for exclusion in exclude
         )
     ]

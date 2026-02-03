@@ -38,6 +38,8 @@ class Trigger:
 class Triggers:
     triggers: list[Trigger] = field(default_factory=list)
 
+    include: list[str] | None = None
+    ignore: list[str] = field(default_factory=list)
     ignore_unspecified: bool = False
 
     @classmethod
@@ -76,8 +78,19 @@ class Triggers:
             )
 
         triggers = [s for instance in instances for s in instance.triggers]
+        # Preserve None if all instances have include=None, otherwise combine all non-None includes
+        include_values = [
+            instance.include for instance in instances if instance.include is not None
+        ]
+        include = [s for inc in include_values for s in inc] if include_values else None
+        ignore = [s for instance in instances for s in instance.ignore]
         ignore_unspecified = instances[0].ignore_unspecified
-        return cls(triggers=triggers, ignore_unspecified=ignore_unspecified)
+        return cls(
+            triggers=triggers,
+            ignore_unspecified=ignore_unspecified,
+            ignore=ignore,
+            include=include,
+        )
 
     def append(self, trigger: Trigger):
         self.triggers.append(trigger)
