@@ -4,6 +4,11 @@
 
 ## 0.16
 
+### 0.16.7
+
+- feat: Add missing support for `exclude` on triggers.
+- feat: Add support for `include` on triggers and functions.
+
 ### 0.16.6
 
 - fix: postgresql parsing of existing function defaults.

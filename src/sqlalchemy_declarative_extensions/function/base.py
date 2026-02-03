@@ -91,6 +91,7 @@ class Functions:
 
     functions: list[Function] = field(default_factory=list)
 
+    include: list[str] | None = None
     ignore: list[str] = field(default_factory=list)
     ignore_unspecified: bool = False
 
@@ -130,10 +131,18 @@ class Functions:
             )
 
         functions = [s for instance in instances for s in instance.functions]
+        # Preserve None if all instances have include=None, otherwise combine all non-None includes
+        include_values = [
+            instance.include for instance in instances if instance.include is not None
+        ]
+        include = [s for inc in include_values for s in inc] if include_values else None
         ignore = [s for instance in instances for s in instance.ignore]
         ignore_unspecified = instances[0].ignore_unspecified
         return cls(
-            functions=functions, ignore_unspecified=ignore_unspecified, ignore=ignore
+            functions=functions,
+            ignore_unspecified=ignore_unspecified,
+            ignore=ignore,
+            include=include,
         )
 
     def append(self, function: Function):
