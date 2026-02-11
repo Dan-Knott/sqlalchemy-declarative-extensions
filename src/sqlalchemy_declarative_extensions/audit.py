@@ -10,7 +10,7 @@ from sqlalchemy_declarative_extensions import (
     register_trigger,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import Trigger
-from sqlalchemy_declarative_extensions.sql import quote_name
+from sqlalchemy_declarative_extensions.sql import qualify_name, quote_name
 
 default_primary_key = Column(
     "audit_pk", types.Integer(), primary_key=True, autoincrement=True
@@ -109,6 +109,7 @@ def audit_table(
     create_audit_triggers(
         table.metadata,
         table,
+        audit_table,
         insert=insert,
         update=update,
         delete=delete,
@@ -242,6 +243,7 @@ def create_audit_functions(
             """,
             returns="TRIGGER",
             language="plpgsql",
+            schema=audit_table.schema,
         )
         functions.append(function)
         register_function(metadata, function)
@@ -252,6 +254,7 @@ def create_audit_functions(
 def create_audit_triggers(
     metadata: MetaData,
     table: Table,
+    audit_table: Table,
     insert: bool = True,
     update: bool = True,
     delete: bool = True,
@@ -282,10 +285,15 @@ def create_audit_triggers(
         if not enabled:
             continue
 
+        # Use qualified function name (schema.function_name) for trigger execution
+        # Use audit_table.schema since functions are created in the audit table's schema
+        function_qualified_name = qualify_name(
+            audit_table.schema, "_".join([function_name, op])
+        )
         trigger = Trigger.after(
             op,
             on=table.fullname,
-            execute="_".join([function_name, op]),
+            execute=function_qualified_name,
             name="_".join([trigger_name, op]),
         ).for_each_row()
         triggers.append(trigger)
