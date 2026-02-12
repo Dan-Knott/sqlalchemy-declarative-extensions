@@ -4,6 +4,10 @@
 
 ## 0.16
 
+### 0.16.8
+
+- fix: Adds schema support to audit functions (that is, they will now be created in the schema of the table to avoid conflicts).
+
 ### 0.16.7
 
 - feat: Add missing support for `exclude` on triggers.
