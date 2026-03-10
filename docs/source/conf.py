@@ -2,7 +2,7 @@ from sphinx_pyproject import SphinxConfig
 
 config = SphinxConfig("../../pyproject.toml")
 
-project = "SQLAlechemy Declarative Extensions"
+project = "SQLAlchemy Declarative Extensions"
 copyright = "2022, Dan Cardin"
 author = config.author
 release = config.version
