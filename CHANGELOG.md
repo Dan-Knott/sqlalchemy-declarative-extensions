@@ -4,6 +4,11 @@
 
 ## 0.16
 
+### 0.16.9
+
+- fix: Support for duplicate PostgreSQL trigger names.
+- fix: Parsing quoted ACL usernames at end of input.
+
 ### 0.16.8
 
 - fix: Adds schema support to audit functions (that is, they will now be created in the schema of the table to avoid conflicts).
