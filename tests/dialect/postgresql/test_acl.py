@@ -1,6 +1,7 @@
 import pytest
 
 from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
+    get_acl_username,
     parse_acl,
     parse_default_acl,
 )
@@ -21,6 +22,25 @@ def test_empty(acl):
 def test_invalid(acl):
     with pytest.raises(ValueError):
         parse_default_acl(acl, "r", "public")
+
+
+@pytest.mark.parametrize(
+    "acl, expected",
+    (
+        ('"role-name"=x', (11, "role-name")),
+        ('"role-name"', (11, "role-name")),
+        ('"role""name"', (12, 'role"name')),
+    ),
+)
+def test_get_acl_username_quoted(acl, expected):
+    assert get_acl_username(acl) == expected
+
+
+def test_acl_with_quoted_grantor():
+    result = parse_acl('"grantee-name"=r/"grantor-name"', "r", "foo")
+
+    assert len(result) == 1
+    assert result[0].grant.target_role == "grantee-name"
 
 
 @pytest.mark.parametrize(
