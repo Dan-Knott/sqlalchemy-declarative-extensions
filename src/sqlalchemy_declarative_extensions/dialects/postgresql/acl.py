@@ -78,7 +78,8 @@ def _parse_acl(
 
     if acl is not None:
         eq_pos, grantee = get_acl_username(acl)
-        assert acl[eq_pos] == "="
+        if eq_pos >= len(acl) or acl[eq_pos] != "=":
+            raise ValueError("ACL syntax error: missing '='.")
 
         if not grantee:
             grantee = "PUBLIC"
@@ -157,6 +158,7 @@ def get_acl_username(acl: str):
                     # Quoting convention is to escape " as "".
                     has_next_char = i + 1 < acl_len
                     if not has_next_char:
+                        i += 1
                         break
 
                     next_char = acl[i + 1]
