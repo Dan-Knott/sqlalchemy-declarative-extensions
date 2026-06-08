@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Iterable, Sequence
+from typing import Hashable, Iterable, Sequence
 
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
@@ -17,6 +17,11 @@ class Trigger:
     name: str
     on: str
     execute: str
+
+    @property
+    def identity(self) -> Hashable:
+        """Return the dialect-specific identity used to compare triggers."""
+        return self.name
 
     def named(self, name: str):
         return replace(self, name=name)

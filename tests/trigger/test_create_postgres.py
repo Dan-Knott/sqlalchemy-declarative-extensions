@@ -37,11 +37,21 @@ class Base(_Base):  # type: ignore
         .named("on_insert_foo")
         .when("pg_trigger_depth() < 1")
         .for_each_row(),
+        Trigger.after("insert", on="bar", execute="gimme")
+        .named("on_insert_foo")
+        .when("pg_trigger_depth() < 1")
+        .for_each_row(),
     )
 
 
 class Foo(Base):
     __tablename__ = "foo"
+
+    id = Column(types.Integer(), primary_key=True)
+
+
+class Bar(Base):
+    __tablename__ = "bar"
 
     id = Column(types.Integer(), primary_key=True)
 

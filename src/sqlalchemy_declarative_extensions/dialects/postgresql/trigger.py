@@ -94,6 +94,10 @@ class Trigger(base.Trigger):
     old_table: str | None = None
     new_table: str | None = None
 
+    @property
+    def identity(self) -> tuple[str, str]:
+        return self.on, self.name
+
     @classmethod
     def before(
         cls, *events: TriggerEvents | str, on: str, execute: str, name: str = ""
