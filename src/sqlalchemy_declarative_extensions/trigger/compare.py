@@ -51,34 +51,36 @@ Operation = Union[CreateTriggerOp, UpdateTriggerOp, DropTriggerOp]
 def compare_triggers(connection: Connection, triggers: Triggers) -> list[Operation]:
     result: list[Operation] = []
 
-    triggers_by_name = {r.name: r for r in triggers.triggers}
-    expected_trigger_names = set(triggers_by_name)
+    triggers_by_identity = {r.identity: r for r in triggers.triggers}
+    expected_trigger_identities = set(triggers_by_identity)
 
     raw_existing_triggers = get_triggers(connection)
     existing_triggers = filter_triggers(
         raw_existing_triggers, exclude=triggers.ignore, include=triggers.include
     )
 
-    existing_triggers_by_name = {r.name: r for r in existing_triggers}
-    existing_trigger_names = set(existing_triggers_by_name)
+    existing_triggers_by_identity = {r.identity: r for r in existing_triggers}
+    existing_trigger_identities = set(existing_triggers_by_identity)
 
-    new_trigger_names = expected_trigger_names - existing_trigger_names
-    removed_trigger_names = existing_trigger_names - expected_trigger_names
+    new_trigger_identities = expected_trigger_identities - existing_trigger_identities
+    removed_trigger_identities = (
+        existing_trigger_identities - expected_trigger_identities
+    )
 
     for trigger in triggers:
-        trigger_created = trigger.name in new_trigger_names
+        trigger_created = trigger.identity in new_trigger_identities
 
         if trigger_created:
             result.append(CreateTriggerOp(trigger))
         else:
-            existing_trigger = existing_triggers_by_name[trigger.name]
+            existing_trigger = existing_triggers_by_identity[trigger.identity]
 
             if existing_trigger != trigger:
                 result.append(UpdateTriggerOp(existing_trigger, trigger))
 
     if not triggers.ignore_unspecified:
-        for removed_trigger in removed_trigger_names:
-            trigger = existing_triggers_by_name[removed_trigger]
+        for removed_trigger in removed_trigger_identities:
+            trigger = existing_triggers_by_identity[removed_trigger]
             result.append(DropTriggerOp(trigger))
 
     return result
