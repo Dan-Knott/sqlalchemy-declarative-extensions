@@ -4,10 +4,14 @@ import enum
 import re
 import textwrap
 from dataclasses import dataclass, replace
-from typing import Any, List, Literal, Sequence, Tuple, cast
+from typing import Any, List, Literal, Mapping, Sequence, Tuple, cast
 
 from sqlalchemy import Column
 
+from sqlalchemy_declarative_extensions.dialects.postgresql.config import (
+    config_to_sql,
+    normalize_config,
+)
 from sqlalchemy_declarative_extensions.function import base
 from sqlalchemy_declarative_extensions.sql import quote_name
 
@@ -62,6 +66,7 @@ class Function(base.Function):
     parallel: FunctionParallel = FunctionParallel.UNSAFE
     strict: bool = False
     leakproof: bool = False
+    config: Mapping[str, str] | None = None
 
     @property
     def _has_sqlbody(self) -> bool:
@@ -101,6 +106,9 @@ class Function(base.Function):
 
         if self.parallel != FunctionParallel.UNSAFE:
             components.append(f"PARALLEL {self.parallel.value}")
+
+        if self.config:
+            components.extend(config_to_sql(self.config))
 
         components.append(f"LANGUAGE {self.language}")
         if self._has_sqlbody:
@@ -152,6 +160,7 @@ class Function(base.Function):
             definition=definition,
             returns=returns,
             parameters=input_parameters,
+            config=normalize_config(self.config),
         )
 
 

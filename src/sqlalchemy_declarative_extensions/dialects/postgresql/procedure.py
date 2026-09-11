@@ -4,9 +4,14 @@ import enum
 import re
 import textwrap
 from dataclasses import dataclass, replace
+from typing import Mapping
 
 from typing_extensions import Self
 
+from sqlalchemy_declarative_extensions.dialects.postgresql.config import (
+    config_to_sql,
+    normalize_config,
+)
 from sqlalchemy_declarative_extensions.procedure import base
 from sqlalchemy_declarative_extensions.sql import quote_name
 
@@ -39,6 +44,7 @@ class Procedure(base.Procedure):
     """
 
     security: ProcedureSecurity = ProcedureSecurity.invoker
+    config: Mapping[str, str] | None = None
 
     @property
     def _has_sqlbody(self) -> bool:
@@ -58,6 +64,9 @@ class Procedure(base.Procedure):
         if self.security == ProcedureSecurity.definer:
             components.append("SECURITY DEFINER")
 
+        if self.config:
+            components.extend(config_to_sql(self.config))
+
         components.append(f"LANGUAGE {self.language}")
         if self._has_sqlbody:
             components.append(self.definition)
@@ -73,7 +82,9 @@ class Procedure(base.Procedure):
         definition = textwrap.dedent(self.definition)
         if self._has_sqlbody:
             definition = definition.strip()
-        return replace(self, definition=definition)
+        return replace(
+            self, definition=definition, config=normalize_config(self.config)
+        )
 
     def with_security(self, security: ProcedureSecurity):
         return replace(self, security=security)

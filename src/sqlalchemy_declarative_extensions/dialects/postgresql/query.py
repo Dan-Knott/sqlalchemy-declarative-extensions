@@ -12,6 +12,9 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
     parse_acl,
     parse_default_acl,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql.config import (
+    config_from_proconfig,
+)
 from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
     Function,
     FunctionParallel,
@@ -228,6 +231,7 @@ def get_procedures_postgresql(connection: Connection) -> Sequence[BaseProcedure]
                 if f.security_definer
                 else ProcedureSecurity.invoker
             ),
+            config=config_from_proconfig(f.config),
         )
         procedures.append(procedure)
 
@@ -268,6 +272,7 @@ def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
             parallel=FUNCTION_PARALLEL[f.parallel],
             strict=f.strict,
             leakproof=f.leakproof,
+            config=config_from_proconfig(f.config),
             returns=f.return_type_string or f.base_return_type,
         )
         functions.append(function)
