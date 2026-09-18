@@ -159,11 +159,14 @@ class DefaultGrant:
         to: HasName | str,
         grant_option=False,
     ):
-        if not isinstance(grant, Grant):
+        variants = self.grant_type.to_variants()
+        if isinstance(grant, Grant):
+            grant = replace(
+                grant, grants=tuple(_map_grant_names(variants, *grant.grants))
+            )
+        else:
             grant = Grant(
-                grants=tuple(
-                    _map_grant_names(self.grant_type.to_variants(), grant, *grants)
-                ),
+                grants=tuple(_map_grant_names(variants, grant, *grants)),
                 target_role=_coerce_name(to),
                 grant_option=grant_option,
             )
