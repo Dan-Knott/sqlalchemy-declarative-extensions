@@ -11,6 +11,11 @@ class FromStrings(enum.Enum):
     def from_strings(
         cls: Type[FromStringsSelf], strings: Iterable[Union[str, FromStringsSelf]]
     ) -> List[FromStringsSelf]:
+        if isinstance(strings, str):
+            raise ValueError(
+                f"{cls.__name__}.from_strings expects a collection of values,"
+                f" got the bare string {strings!r}."
+            )
         return [cls.from_string(string) for string in strings]
 
     @classmethod
