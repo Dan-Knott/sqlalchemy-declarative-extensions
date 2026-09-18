@@ -39,16 +39,43 @@ wants to exist in general and a `DefaultGrant` will, by default, project the
 implied grants against pre-existing objects and ensure they have the same sets
 of permissions.
 
-## Functions
+## Functions/Procedures
 
-There currently exists a generic `Function` object which contains all function
-behavior. Note that there **do** exist certain function definition options which
-are specific to Postgres, and should they be implemented you would be required
-to shift use to the dialect-specific version.
+```python
+from sqlalchemy_declarative_extensions import Functions
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    Function,
+    FunctionReturn,
+    FunctionVolatility,
+)
 
-Additionally, not all function options are currently supported for Postgres. At
-current moment, only the options required to support the
-[Audit Table](../audit_tables.md) feature have been implemented.
+functions = Functions().are(
+     Function(
+         "gimme_rows",
+         "SELECT id, name FROM dem_rowz WHERE group_id = _group_id;",
+         language="sql",
+         parameters=["_group_id int"],
+         returns=FunctionReturn(table=[("id", "int"), ("name", "text")]),
+         volatility=FunctionVolatility.stable,
+     ),
+     ...
+)
+```
+
+A generic `Function` object exists, but it only exposes the subset of options
+common to every dialect. Prefer the Postgres-specific `Function` above, which
+additionally supports `SECURITY` (`FunctionSecurity`), `VOLATILITY`
+(`FunctionVolatility`), `PARALLEL` (`FunctionParallel`), `STRICT`, and
+`LEAKPROOF`. `parameters` accepts raw SQL strings or `FunctionParam` objects,
+and `returns` accepts a raw SQL type string or a `FunctionReturn`. A
+`RETURNS TABLE(...)` signature is declared either as `FunctionReturn(table=...)`
+or as `FunctionParam.table(...)` entries in `parameters`.
+
+A Postgres-specific `Procedure` likewise exists, supporting `SECURITY`
+(`ProcedureSecurity`).
+
+Note, not all function/procedure options are currently supported for Postgres;
+unsupported options can be evaluated/added on request.
 
 ## Triggers
 
@@ -90,6 +117,16 @@ have been implemented.
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql.grant_type
    :members:
+```
+
+```{eval-rst}
+.. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql.function
+   :members: Function, FunctionParam, FunctionReturn, FunctionSecurity, FunctionVolatility, FunctionParallel
+```
+
+```{eval-rst}
+.. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql.procedure
+   :members: Procedure, ProcedureSecurity
 ```
 
 ```{eval-rst}

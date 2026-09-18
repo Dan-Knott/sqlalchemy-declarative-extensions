@@ -5,7 +5,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy_declarative_extensions import declarative_database, Functions
 
 # Import dialect-specific Function for full feature support
-from sqlalchemy_declarative_extensions.dialects.postgresql import Function
+from sqlalchemy_declarative_extensions.dialects.postgresql import Function, FunctionReturn
 # from sqlalchemy_declarative_extensions.dialects.mysql import Function
 
 _Base = declarative_base()
@@ -36,7 +36,7 @@ class Base(_Base):
             ''',
             language="sql",
             parameters=["_group_id int"],
-            returns="TABLE(id int, name text)",
+            returns=FunctionReturn(table=[("id", "int"), ("name", "text")]),
             volatility='stable', # PostgreSQL specific characteristic
         )
 
@@ -67,14 +67,15 @@ The base `Function` provides only the most common subset of options.
 ```
 
 ```{note}
-Function comparison logic now supports parsing and comparing function parameters (including name and type)
-and various dialect-specific characteristics:
+Function comparison parses and compares function parameters (including name and type) as well as
+dialect-specific characteristics:
 
-*   **PostgreSQL:** `LANGUAGE`, `VOLATILITY`, `SECURITY`, `RETURNS TABLE(...)` syntax.
+*   **PostgreSQL:** `LANGUAGE`, `VOLATILITY`, `SECURITY`, `PARALLEL`, `STRICT`, `LEAKPROOF`, and
+    `RETURNS TABLE(...)` syntax.
 *   **MySQL:** `DETERMINISTIC`, `DATA ACCESS`, `SECURITY`.
 
-The comparison logic handles normalization (e.g., mapping `integer` to `int4` in PostgreSQL) to ensure
-accurate idempotency checks during Alembic autogeneration.
+Comparison normalizes types (e.g., mapping `integer` to `int4` in PostgreSQL) to ensure accurate
+idempotency checks during Alembic autogeneration.
 ```
 
 ```{eval-rst}
@@ -83,14 +84,6 @@ accurate idempotency checks during Alembic autogeneration.
 ```
 
 Note, there also exist dialect-specific variants which you must use in order to make use of
-any dialect-specific options.
-
-```{eval-rst}
-.. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql.function
-   :members: Function, Procedure
-```
-
-```{eval-rst}
-.. autoapimodule:: sqlalchemy_declarative_extensions.dialects.mysql.function
-   :members: Function
-```
+any dialect-specific options. The dialect-specific `Function`, `Procedure`, and their supporting
+types are documented alongside their dialect, under [Postgresql](dialects/postgresql.md) and
+[MySQL](dialects/mysql.md).

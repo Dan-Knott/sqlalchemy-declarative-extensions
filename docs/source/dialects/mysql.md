@@ -16,7 +16,8 @@ procedures = Procedures().are(
 ```
 
 ```{note}
-Neither functions nor procedures currently support arguments!
+Functions accept `parameters` (and a `returns` type), but procedures do not currently support
+arguments.
 ```
 
 While function/procedure **detailed** options do vary across dialects, it is possible to define
@@ -45,5 +46,5 @@ them, which is the reason for the dialect-scoped `dialects.mysql` import above.
 
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.dialects.mysql
-   :members: Function, FunctionSecurity, Procedure, ProcedureSecurity, FunctionSecurity, Trigger, TriggerTimes, TriggerForEach, TriggerEvents, TriggerOrders, TriggerOrder
+   :members: Function, FunctionDataAccess, FunctionSecurity, Procedure, ProcedureSecurity, Trigger, TriggerTimes, TriggerEvents, TriggerOrders, TriggerOrder
 ```
