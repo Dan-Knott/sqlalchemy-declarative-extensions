@@ -135,6 +135,12 @@ class Function(base.Function):
     def with_security_definer(self):
         return replace(self, security=FunctionSecurity.definer)
 
+    def with_volatility(self, volatility: FunctionVolatility | str):
+        return replace(self, volatility=volatility)
+
+    def with_parallel(self, parallel: FunctionParallel | str):
+        return replace(self, parallel=parallel)
+
     def normalize(self) -> Function:
         definition = textwrap.dedent(self.definition)
         if self._has_sqlbody:

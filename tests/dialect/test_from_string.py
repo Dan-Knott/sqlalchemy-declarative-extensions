@@ -81,6 +81,20 @@ def test_postgresql_function_coerces_strings():
     assert "PARALLEL SAFE" in create
 
 
+def test_postgresql_function_with_builders_accept_strings():
+    function = postgresql.Function("f", "SELECT 1;", returns="INTEGER")
+
+    assert function.with_volatility("immutable").volatility is (
+        postgresql.FunctionVolatility.IMMUTABLE
+    )
+    assert function.with_parallel("restricted").parallel is (
+        postgresql.FunctionParallel.RESTRICTED
+    )
+    assert function.with_security("definer").security is (
+        postgresql.FunctionSecurity.definer
+    )
+
+
 def test_postgresql_procedure_coerces_strings():
     procedure = postgresql.Procedure("p", "SELECT 1;", security="definer")
 
