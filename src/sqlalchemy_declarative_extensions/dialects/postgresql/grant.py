@@ -68,7 +68,7 @@ class Grant(Generic[G]):
         grant_option=False,
     ) -> Grant:
         return cls(
-            grants=tuple(sorted([grant, *grants])),  # type: ignore
+            grants=tuple(sorted([grant, *grants], key=_grant_sort_key)),  # type: ignore
             target_role=_coerce_name(to),
             grant_option=grant_option,
         )
@@ -374,6 +374,17 @@ def _map_grant_names(variant: G, *grants: str | G):
     return sorted(
         [g if isinstance(g, GrantOptions) else variant.from_string(g) for g in grants]
     )
+
+
+def _grant_sort_key(grant: str | GrantOptions) -> str:
+    """Order grants which may be given as either a string or a grant variant.
+
+    `Grant.new` has no `grant_type` yet, so it cannot coerce the strings into
+    their variant; it only needs a stable order across both forms.
+    """
+    if isinstance(grant, GrantOptions):
+        return grant.value
+    return grant.upper()
 
 
 def _coerce_name(name: str | HasName):

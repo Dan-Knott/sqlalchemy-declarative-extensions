@@ -7,6 +7,7 @@ from sqlalchemy_declarative_extensions.api import (
     register_sqlalchemy_events,
 )
 from sqlalchemy_declarative_extensions.dialects.snowflake import Role
+from sqlalchemy_declarative_extensions.dialects.snowflake.role import SecondaryRoles
 from sqlalchemy_declarative_extensions.role.compare import CreateRoleOp, compare_roles
 
 
@@ -43,3 +44,12 @@ def test_create_roles(snowflake):
     assert len(roles) == 2
     assert roles[0].name == "im_a_role"
     assert roles[1].name == "im_a_user"
+
+
+def test_default_secondary_roles_renders_value():
+    """Assert `default_secondary_roles` renders the enum's value, not the member."""
+    role = Role("im_a_user", default_secondary_roles=[SecondaryRoles.all])
+
+    (statement,) = role.to_sql_create()
+    assert "default_secondary_roles = ('ALL')" in statement
+    assert "SecondaryRoles" not in statement

@@ -10,7 +10,12 @@ from sqlalchemy_declarative_extensions import (
     declarative_database,
     register_sqlalchemy_events,
 )
-from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, Role
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    DefaultGrant,
+    Grant,
+    Role,
+)
+from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import TableGrants
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
@@ -96,3 +101,19 @@ def test_createall_grant(pg):
     with pytest.raises(sqlalchemy.exc.ProgrammingError):
         with pg.connect() as conn:
             conn.execute(text("SET ROLE read; SELECT * FROM bar.bar"))
+
+
+@pytest.mark.grant
+def test_grant_new_mixes_strings_and_variants():
+    """Assert `Grant.new` accepts a mix of `str` and grant variants.
+
+    The order of the arguments should not matter, given `Grant.new` sorts them.
+    """
+    forward = Grant.new("select", TableGrants.insert, to="foo")
+    backward = Grant.new(TableGrants.insert, "select", to="foo")
+
+    assert forward == backward
+    assert forward.grants == (TableGrants.insert, "select")
+
+    statement = forward.on_tables("foo")
+    assert str(statement.to_sql()) == 'GRANT INSERT, SELECT ON TABLE "foo" TO "foo";'

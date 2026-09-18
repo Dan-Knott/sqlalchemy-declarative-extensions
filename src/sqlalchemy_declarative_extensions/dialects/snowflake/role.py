@@ -333,7 +333,10 @@ def render_role_options(role: Role | RoleDiff) -> list[str]:
         segments.append(f"DEFAULT_ROLE = '{role.default_role}'")
 
     if role.default_secondary_roles is not None:
-        secondary_roles = ", ".join(f"'{r}'" for r in role.default_secondary_roles)
+        secondary_roles = ", ".join(
+            f"'{r.value}'"
+            for r in SecondaryRoles.from_strings(role.default_secondary_roles)
+        )
         segments.append(f"default_secondary_roles = ({secondary_roles})")
 
     if role.mins_to_bypass_mfa is not None:
