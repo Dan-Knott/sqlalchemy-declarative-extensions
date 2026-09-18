@@ -16,11 +16,11 @@ pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
     "attributes",
     [
         {},
-        {"parallel": FunctionParallel.RESTRICTED},
-        {"parallel": FunctionParallel.SAFE},
+        {"parallel": FunctionParallel.restricted},
+        {"parallel": FunctionParallel.safe},
         {"strict": True},
         {"leakproof": True},
-        {"parallel": FunctionParallel.SAFE, "strict": True, "leakproof": True},
+        {"parallel": FunctionParallel.safe, "strict": True, "leakproof": True},
         # The same attributes, spelled as plain strings.
         {"parallel": "safe"},
         {"volatility": "stable"},

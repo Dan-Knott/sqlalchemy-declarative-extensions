@@ -8,10 +8,10 @@ from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 
 def test_from_string_accepts_the_sql_keyword_in_either_case():
     assert postgresql.FunctionVolatility.from_string("STABLE") is (
-        postgresql.FunctionVolatility.STABLE
+        postgresql.FunctionVolatility.stable
     )
     assert postgresql.FunctionVolatility.from_string("stable") is (
-        postgresql.FunctionVolatility.STABLE
+        postgresql.FunctionVolatility.stable
     )
 
 
@@ -62,16 +62,16 @@ def test_postgresql_function_coerces_strings():
         security="definer",
     )
 
-    assert function.volatility is postgresql.FunctionVolatility.STABLE
-    assert function.parallel is postgresql.FunctionParallel.SAFE
+    assert function.volatility is postgresql.FunctionVolatility.stable
+    assert function.parallel is postgresql.FunctionParallel.safe
     assert function.security is postgresql.FunctionSecurity.definer
 
     assert function == postgresql.Function(
         "f",
         "SELECT 1;",
         returns="INTEGER",
-        volatility=postgresql.FunctionVolatility.STABLE,
-        parallel=postgresql.FunctionParallel.SAFE,
+        volatility=postgresql.FunctionVolatility.stable,
+        parallel=postgresql.FunctionParallel.safe,
         security=postgresql.FunctionSecurity.definer,
     )
 
@@ -85,10 +85,10 @@ def test_postgresql_function_with_builders_accept_strings():
     function = postgresql.Function("f", "SELECT 1;", returns="INTEGER")
 
     assert function.with_volatility("immutable").volatility is (
-        postgresql.FunctionVolatility.IMMUTABLE
+        postgresql.FunctionVolatility.immutable
     )
     assert function.with_parallel("restricted").parallel is (
-        postgresql.FunctionParallel.RESTRICTED
+        postgresql.FunctionParallel.restricted
     )
     assert function.with_security("definer").security is (
         postgresql.FunctionSecurity.definer
@@ -183,4 +183,39 @@ def test_coercion_survives_dataclass_replace():
         "f", "SELECT 1;", returns="INTEGER", volatility="stable"
     ).normalize()
 
-    assert function.volatility is postgresql.FunctionVolatility.STABLE
+    assert function.volatility is postgresql.FunctionVolatility.stable
+
+
+def test_volatility_and_parallel_values_survive_the_lowercase_rename():
+    """The rename moved member names only; values are untouched."""
+    assert postgresql.FunctionVolatility("VOLATILE") is (
+        postgresql.FunctionVolatility.volatile
+    )
+    assert postgresql.FunctionVolatility("STABLE") is (
+        postgresql.FunctionVolatility.stable
+    )
+    assert postgresql.FunctionParallel("SAFE") is postgresql.FunctionParallel.safe
+
+    assert postgresql.FunctionVolatility.from_string("stable") is (
+        postgresql.FunctionVolatility.stable
+    )
+    assert postgresql.FunctionParallel.from_string("safe") is (
+        postgresql.FunctionParallel.safe
+    )
+
+
+@pytest.mark.parametrize(
+    ("enum_cls", "old_name"),
+    [
+        (postgresql.FunctionVolatility, "VOLATILE"),
+        (postgresql.FunctionVolatility, "STABLE"),
+        (postgresql.FunctionVolatility, "IMMUTABLE"),
+        (postgresql.FunctionParallel, "UNSAFE"),
+        (postgresql.FunctionParallel, "RESTRICTED"),
+        (postgresql.FunctionParallel, "SAFE"),
+    ],
+)
+def test_old_uppercase_member_names_are_gone(enum_cls, old_name):
+    """A clean break: no silent alias should be reintroduced."""
+    with pytest.raises(AttributeError):
+        getattr(enum_cls, old_name)
