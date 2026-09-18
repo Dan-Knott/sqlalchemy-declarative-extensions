@@ -168,6 +168,15 @@ def test_mysql_trigger_coerces_strings():
     assert "AFTER DELETE" in ordered.to_sql_create()
 
 
+def test_snowflake_role_coerces_strings():
+    role = snowflake.Role("r", default_secondary_roles=["all"])
+
+    assert role.default_secondary_roles == [snowflake.SecondaryRoles.all]
+    assert role == snowflake.Role(
+        "r", default_secondary_roles=[snowflake.SecondaryRoles.all]
+    )
+
+
 def test_coercion_survives_dataclass_replace():
     """`normalize` and every `with_*` builder re-run `__post_init__`."""
     function = postgresql.Function(
