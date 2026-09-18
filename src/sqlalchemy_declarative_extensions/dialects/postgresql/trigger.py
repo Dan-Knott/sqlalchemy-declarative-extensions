@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Sequence, cast
 
 from sqlalchemy.engine import Connection
 
@@ -86,13 +87,18 @@ class Trigger(base.Trigger):
     Some trigger options are not **currently** supported.
     """
 
-    events: list[TriggerEvents]
-    time: TriggerTimes
-    for_each: TriggerForEach = TriggerForEach.statement
+    events: Sequence[TriggerEvents | str]
+    time: TriggerTimes | str
+    for_each: TriggerForEach | str = TriggerForEach.statement
     condition: str | None = None
     arguments: tuple[str, ...] | None = None
     old_table: str | None = None
     new_table: str | None = None
+
+    def __post_init__(self):
+        self.events = TriggerEvents.from_strings(self.events)
+        self.time = TriggerTimes.from_string(self.time)
+        self.for_each = TriggerForEach.from_string(self.for_each)
 
     @property
     def identity(self) -> tuple[str, str]:
@@ -171,8 +177,10 @@ class Trigger(base.Trigger):
 
         components.append("TRIGGER")
         components.append(quote_name(self.name))
-        components.append(self.time.value)
-        components.append(" OR ".join([e.value for e in self.events]))
+        components.append(cast(TriggerTimes, self.time).value)
+        components.append(
+            " OR ".join([cast(TriggerEvents, e).value for e in self.events])
+        )
         components.append("ON")
 
         components.append(quote_name(self.on))
@@ -188,7 +196,7 @@ class Trigger(base.Trigger):
             components.extend(referencing_clauses)
 
         components.append("FOR EACH")
-        components.append(self.for_each.value)
+        components.append(cast(TriggerForEach, self.for_each).value)
 
         if self.condition:
             components.append("WHEN")

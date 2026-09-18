@@ -3,20 +3,22 @@ from __future__ import annotations
 import enum
 import textwrap
 from dataclasses import dataclass, replace
+from typing import cast
 
 from typing_extensions import Self
 
+from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 from sqlalchemy_declarative_extensions.function import base
 
 
 @enum.unique
-class FunctionSecurity(enum.Enum):
+class FunctionSecurity(FromStrings):
     invoker = "INVOKER"
     definer = "DEFINER"
 
 
 @enum.unique
-class FunctionDataAccess(enum.Enum):
+class FunctionDataAccess(FromStrings):
     no_sql = "NO SQL"
     contains_sql = "CONTAINS SQL"
     reads_sql = "READS SQL DATA"
@@ -27,9 +29,13 @@ class FunctionDataAccess(enum.Enum):
 class Function(base.Function):
     """Describes a MySQL function."""
 
-    security: FunctionSecurity = FunctionSecurity.definer
+    security: FunctionSecurity | str = FunctionSecurity.definer
     deterministic: bool = False
-    data_access: FunctionDataAccess = FunctionDataAccess.contains_sql
+    data_access: FunctionDataAccess | str = FunctionDataAccess.contains_sql
+
+    def __post_init__(self):
+        self.security = FunctionSecurity.from_string(self.security)
+        self.data_access = FunctionDataAccess.from_string(self.data_access)
 
     @classmethod
     def from_unknown_function(cls, f: base.Function) -> Self:
@@ -58,7 +64,7 @@ class Function(base.Function):
         if self.deterministic:
             components.append("DETERMINISTIC")
 
-        components.append(self.data_access.value)
+        components.append(cast(FunctionDataAccess, self.data_access).value)
 
         if self.security == FunctionSecurity.invoker:
             components.append("SQL SECURITY INVOKER")
@@ -70,13 +76,13 @@ class Function(base.Function):
     def to_sql_drop(self) -> list[str]:
         return [f"DROP FUNCTION {self.qualified_name};"]
 
-    def with_security(self, security: FunctionSecurity):
+    def with_security(self, security: FunctionSecurity | str):
         return replace(self, security=security)
 
     def with_security_definer(self):
         return replace(self, security=FunctionSecurity.definer)
 
-    def with_data_access(self, data_access: FunctionDataAccess):
+    def with_data_access(self, data_access: FunctionDataAccess | str):
         return replace(self, data_access=data_access)
 
     def no_sql(self):

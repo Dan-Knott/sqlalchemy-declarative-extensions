@@ -8,6 +8,7 @@ from typing import Any, List, Literal, Sequence, Tuple, cast
 
 from sqlalchemy import Column
 
+from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 from sqlalchemy_declarative_extensions.function import base
 from sqlalchemy_declarative_extensions.sql import quote_name
 
@@ -29,20 +30,20 @@ END
 
 
 @enum.unique
-class FunctionSecurity(enum.Enum):
+class FunctionSecurity(FromStrings):
     invoker = "INVOKER"
     definer = "DEFINER"
 
 
 @enum.unique
-class FunctionVolatility(enum.Enum):
+class FunctionVolatility(FromStrings):
     VOLATILE = "VOLATILE"
     STABLE = "STABLE"
     IMMUTABLE = "IMMUTABLE"
 
 
 @enum.unique
-class FunctionParallel(enum.Enum):
+class FunctionParallel(FromStrings):
     UNSAFE = "UNSAFE"
     RESTRICTED = "RESTRICTED"
     SAFE = "SAFE"
@@ -55,13 +56,18 @@ class Function(base.Function):
     Not all functionality is currently implemented, but can be evaluated/added on request.
     """
 
-    security: FunctionSecurity = FunctionSecurity.invoker
+    security: FunctionSecurity | str = FunctionSecurity.invoker
     returns: FunctionReturn | str | None = None  # type: ignore
     parameters: Sequence[FunctionParam | str] | None = None  # type: ignore
-    volatility: FunctionVolatility = FunctionVolatility.VOLATILE
-    parallel: FunctionParallel = FunctionParallel.UNSAFE
+    volatility: FunctionVolatility | str = FunctionVolatility.VOLATILE
+    parallel: FunctionParallel | str = FunctionParallel.UNSAFE
     strict: bool = False
     leakproof: bool = False
+
+    def __post_init__(self):
+        self.security = FunctionSecurity.from_string(self.security)
+        self.volatility = FunctionVolatility.from_string(self.volatility)
+        self.parallel = FunctionParallel.from_string(self.parallel)
 
     @property
     def _has_sqlbody(self) -> bool:
@@ -91,7 +97,7 @@ class Function(base.Function):
             components.append("SECURITY DEFINER")
 
         if self.volatility != FunctionVolatility.VOLATILE:
-            components.append(self.volatility.value)
+            components.append(cast(FunctionVolatility, self.volatility).value)
 
         if self.strict:
             components.append("STRICT")
@@ -100,7 +106,8 @@ class Function(base.Function):
             components.append("LEAKPROOF")
 
         if self.parallel != FunctionParallel.UNSAFE:
-            components.append(f"PARALLEL {self.parallel.value}")
+            parallel = cast(FunctionParallel, self.parallel)
+            components.append(f"PARALLEL {parallel.value}")
 
         components.append(f"LANGUAGE {self.language}")
         if self._has_sqlbody:
@@ -122,7 +129,7 @@ class Function(base.Function):
 
         return [f"DROP FUNCTION {self.qualified_name}({param_str});"]
 
-    def with_security(self, security: FunctionSecurity):
+    def with_security(self, security: FunctionSecurity | str):
         return replace(self, security=security)
 
     def with_security_definer(self):

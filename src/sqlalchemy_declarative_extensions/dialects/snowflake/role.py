@@ -3,11 +3,12 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, field, fields
 
+from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 from sqlalchemy_declarative_extensions.role import generic
 
 
 @enum.unique
-class SecondaryRoles(enum.Enum):
+class SecondaryRoles(FromStrings):
     all = "ALL"
 
 
@@ -46,7 +47,7 @@ class Role(generic.Role):
     default_warehouse: str | None = None
     default_namespace: str | None = None
     default_role: str | None = None
-    default_secondary_roles: list[SecondaryRoles] | None = None
+    default_secondary_roles: list[SecondaryRoles | str] | None = None
     mins_to_bypass_mfa: int | None = None
 
     password: str | None = field(default=None, compare=False)
@@ -54,6 +55,14 @@ class Role(generic.Role):
     rsa_public_key_fp: str | None = field(default=None, compare=False)
     rsa_public_key_2: str | None = field(default=None, compare=False)
     rsa_public_key_2_fp: str | None = field(default=None, compare=False)
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        if self.default_secondary_roles is not None:
+            self.default_secondary_roles = SecondaryRoles.from_strings(
+                self.default_secondary_roles
+            )
 
     @classmethod
     def from_snowflake_user(cls, r, in_roles: list[str] | None = None) -> Role:
@@ -192,7 +201,7 @@ class RoleDiff:
     default_warehouse: str | None = None
     default_namespace: str | None = None
     default_role: str | None = None
-    default_secondary_roles: list[SecondaryRoles] | None = None
+    default_secondary_roles: list[SecondaryRoles | str] | None = None
     mins_to_bypass_mfa: int | None = None
 
     add_roles: list[str] = field(default_factory=list)

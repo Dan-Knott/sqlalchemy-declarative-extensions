@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 
 from typing_extensions import Self
 
+from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 from sqlalchemy_declarative_extensions.procedure import base
 from sqlalchemy_declarative_extensions.sql import quote_name
 
@@ -24,7 +25,7 @@ END
 
 
 @enum.unique
-class ProcedureSecurity(enum.Enum):
+class ProcedureSecurity(FromStrings):
     invoker = "INVOKER"
     definer = "DEFINER"
 
@@ -38,7 +39,10 @@ class Procedure(base.Procedure):
     be evaluated/added on request.
     """
 
-    security: ProcedureSecurity = ProcedureSecurity.invoker
+    security: ProcedureSecurity | str = ProcedureSecurity.invoker
+
+    def __post_init__(self):
+        self.security = ProcedureSecurity.from_string(self.security)
 
     @property
     def _has_sqlbody(self) -> bool:
@@ -75,7 +79,7 @@ class Procedure(base.Procedure):
             definition = definition.strip()
         return replace(self, definition=definition)
 
-    def with_security(self, security: ProcedureSecurity):
+    def with_security(self, security: ProcedureSecurity | str):
         return replace(self, security=security)
 
     def with_security_definer(self):

@@ -56,6 +56,17 @@ class Base(_Base):  # type: ignore
             data_access=FunctionDataAccess.no_sql,
             security=FunctionSecurity.invoker,  # Explicitly set security
         ),
+        # The same characteristics, spelled as plain strings: the member name for
+        # `data_access` and the SQL keyword for `security`.
+        Function(
+            "stringly_typed",
+            "RETURN val * 2;",
+            parameters=["val INT"],
+            returns="INTEGER",
+            deterministic=True,
+            data_access="no_sql",
+            security="INVOKER",
+        ),
     )
 
 
@@ -100,6 +111,10 @@ def test_create_mysql(mysql):
         text("SELECT complex_processor(45, 'Another')")
     ).scalar()
     assert result_complex_2 == "Another: 45"
+
+    # Test stringly_typed, declared without importing either enum
+    result_stringly = mysql.execute(text("SELECT stringly_typed(21)")).scalar()
+    assert result_stringly == 42
 
     # Verify comparison
     connection = mysql.connection()

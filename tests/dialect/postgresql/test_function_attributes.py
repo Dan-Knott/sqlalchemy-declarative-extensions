@@ -21,6 +21,11 @@ pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
         {"strict": True},
         {"leakproof": True},
         {"parallel": FunctionParallel.SAFE, "strict": True, "leakproof": True},
+        # The same attributes, spelled as plain strings.
+        {"parallel": "safe"},
+        {"volatility": "stable"},
+        {"security": "definer"},
+        {"parallel": "safe", "strict": True, "leakproof": True},
     ],
 )
 def test_function_attributes(pg, attributes):

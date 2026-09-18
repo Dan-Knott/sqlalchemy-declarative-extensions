@@ -54,6 +54,12 @@ class Base(_Base):
 ```
 
 ```{note}
+Every enum-valued option accepts a plain string, so you never need to import the enum type.
+Both the SQL keyword and the enum's member name are accepted, case-insensitively: `volatility='stable'`,
+`parallel='safe'`, `security='definer'`, and (MySQL) `data_access='NO SQL'` or `data_access='no_sql'`.
+```
+
+```{note}
 Functions options are wildly different across dialects. As such, you should likely always use
 the dialect-specific `Function` object (e.g., `sqlalchemy_declarative_extensions.dialects.postgresql.Function`
 or `sqlalchemy_declarative_extensions.dialects.mysql.Function`) to access all available features.

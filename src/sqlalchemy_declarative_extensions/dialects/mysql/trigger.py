@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import cast
 
 from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 from sqlalchemy_declarative_extensions.trigger import base
@@ -29,8 +30,11 @@ class TriggerOrder:
     MySQL triggers can be (optionally) made to execute before/after a related trigger.
     """
 
-    order: TriggerOrders
+    order: TriggerOrders | str
     other_trigger_name: str
+
+    def __post_init__(self):
+        self.order = TriggerOrders.from_string(self.order)
 
 
 @dataclass
@@ -40,9 +44,13 @@ class Trigger(base.Trigger):
     Some trigger options are not **currently** supported.
     """
 
-    time: TriggerTimes
-    event: TriggerEvents
+    time: TriggerTimes | str
+    event: TriggerEvents | str
     order: TriggerOrder | None = None
+
+    def __post_init__(self):
+        self.time = TriggerTimes.from_string(self.time)
+        self.event = TriggerEvents.from_string(self.event)
 
     @classmethod
     def before(
@@ -103,13 +111,13 @@ class Trigger(base.Trigger):
         components = ["CREATE"]
         components.append("TRIGGER")
         components.append(self.name)
-        components.append(self.time.value)
-        components.append(self.event.value)
+        components.append(cast(TriggerTimes, self.time).value)
+        components.append(cast(TriggerEvents, self.event).value)
         components.append("ON")
         components.append(self.on)
         components.append("FOR EACH ROW")
         if self.order:
-            components.append(self.order.order.value)
+            components.append(cast(TriggerOrders, self.order.order).value)
             components.append(self.order.other_trigger_name)
         components.append(self.execute)
 

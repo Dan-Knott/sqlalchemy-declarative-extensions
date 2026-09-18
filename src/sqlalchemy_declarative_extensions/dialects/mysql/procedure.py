@@ -6,11 +6,12 @@ from dataclasses import dataclass, replace
 
 from typing_extensions import Self
 
+from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 from sqlalchemy_declarative_extensions.procedure import base
 
 
 @enum.unique
-class ProcedureSecurity(enum.Enum):
+class ProcedureSecurity(FromStrings):
     invoker = "INVOKER"
     definer = "DEFINER"
 
@@ -19,7 +20,10 @@ class ProcedureSecurity(enum.Enum):
 class Procedure(base.Procedure):
     """Describes a MySQL procedure."""
 
-    security: ProcedureSecurity = ProcedureSecurity.definer
+    security: ProcedureSecurity | str = ProcedureSecurity.definer
+
+    def __post_init__(self):
+        self.security = ProcedureSecurity.from_string(self.security)
 
     @classmethod
     def from_unknown_procedure(cls, f: base.Procedure) -> Self:
@@ -32,7 +36,7 @@ class Procedure(base.Procedure):
             schema=f.schema,
         )
 
-    def with_security(self, security: ProcedureSecurity):
+    def with_security(self, security: ProcedureSecurity | str):
         return replace(self, security=security)
 
     def with_security_definer(self):
