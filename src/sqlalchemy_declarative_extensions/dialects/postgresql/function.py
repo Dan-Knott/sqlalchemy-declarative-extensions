@@ -35,18 +35,25 @@ class FunctionSecurity(FromStrings):
     definer = "DEFINER"
 
 
-@enum.unique
 class FunctionVolatility(FromStrings):
     volatile = "VOLATILE"
     stable = "STABLE"
     immutable = "IMMUTABLE"
 
+    VOLATILE = volatile
+    STABLE = stable
+    IMMUTABLE = immutable
 
-@enum.unique
+
+
 class FunctionParallel(FromStrings):
     unsafe = "UNSAFE"
     restricted = "RESTRICTED"
     safe = "SAFE"
+
+    UNSAFE = unsafe
+    RESTRICTED = restricted
+    SAFE = safe
 
 
 @dataclass

@@ -215,7 +215,6 @@ def test_volatility_and_parallel_values_survive_the_lowercase_rename():
         (postgresql.FunctionParallel, "SAFE"),
     ],
 )
-def test_old_uppercase_member_names_are_gone(enum_cls, old_name):
-    """A clean break: no silent alias should be reintroduced."""
-    with pytest.raises(AttributeError):
-        getattr(enum_cls, old_name)
+def test_old_uppercase_member_names_alias_the_lowercase_members(enum_cls, old_name):
+    assert getattr(enum_cls, old_name) is getattr(enum_cls, old_name.lower())
+    assert old_name not in [member.name for member in enum_cls]
