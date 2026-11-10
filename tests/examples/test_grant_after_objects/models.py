@@ -2,7 +2,6 @@ from sqlalchemy import Column, types
 
 from sqlalchemy_declarative_extensions import (
     Grants,
-    Roles,
     declarative_database,
     view,
 )
@@ -23,19 +22,17 @@ reader = Role("reader")
 class Base(_Base):  # type: ignore
     __abstract__ = True
 
-    roles = Roles(ignore_unspecified=True).are(reader)
     functions = [Function("one", "SELECT 1", returns="integer")]
     grants = Grants().are(
         Grant.new("execute", to=reader).on_objects(
             "one", object_type=GrantTypes.function
-        ),
-        Grant.new("select", "insert", to=reader).on_tables("foo"),
-        Grant.new("select", to=reader).on_tables("bar"),
+        )
     )
 
 
 class Foo(Base):
     __tablename__ = "foo"
+    __table_args__ = (Grant.new("select", "insert", to=reader),)
 
     id = Column(types.Integer(), primary_key=True)
 
@@ -43,4 +40,5 @@ class Foo(Base):
 @view(Base)
 class Bar:
     __tablename__ = "bar"
+    __table_args__ = (Grant.new("select", to=reader),)
     __view__ = "SELECT id FROM foo"

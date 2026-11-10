@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeVar
 
 from sqlalchemy import event
+from sqlalchemy.engine import Connection
 from sqlalchemy.sql.schema import MetaData
 
 from sqlalchemy_declarative_extensions.database.base import Databases
@@ -225,8 +226,6 @@ def register_create_events(
     from sqlalchemy_declarative_extensions.view.ddl import view_ddl
 
     concrete_schemas = metadata.info.get("schemas") or Schemas()
-    concrete_roles = metadata.info.get("roles") or Roles()
-    concrete_grants = metadata.info.get("grants") or Grants()
     concrete_views = Views.extract(metadata) or Views()
     concrete_procedures = metadata.info.get("procedures") or Procedures()
     concrete_functions = Functions.extract(metadata) or Functions()
@@ -255,14 +254,22 @@ def register_create_events(
         event.listen(
             metadata,
             "before_create",
-            role_ddl(concrete_roles, role_filter),
+            _at_event_time(
+                lambda m: role_ddl(Roles.extract(m) or Roles(), role_filter)
+            ),
         )
 
     if grants:
         event.listen(
             metadata,
             "before_create",
-            grant_ddl(concrete_grants, concrete_roles, object_grants=False),
+            _at_event_time(
+                lambda m: grant_ddl(
+                    Grants.extract(m) or Grants(),
+                    Roles.extract(m),
+                    object_grants=False,
+                )
+            ),
         )
         # There should(?) be no need to handle dropping for grants,
         # they will be handled directly by table handling.
@@ -303,7 +310,9 @@ def register_create_events(
         event.listen(
             metadata,
             "after_create",
-            grant_ddl(concrete_grants, concrete_roles),
+            _at_event_time(
+                lambda m: grant_ddl(Grants.extract(m) or Grants(), Roles.extract(m))
+            ),
         )
 
     if rows:
@@ -313,6 +322,15 @@ def register_create_events(
             "after_create",
             rows_query(concrete_rows, row_filter),
         )
+
+
+def _at_event_time(
+    make_listener: Callable[[MetaData], Callable[..., None]],
+) -> Callable[..., None]:
+    def receive_event(metadata: MetaData, connection: Connection, **kw: Any) -> None:
+        make_listener(metadata)(metadata, connection, **kw)
+
+    return receive_event
 
 
 def register_drop_events(
