@@ -8,6 +8,10 @@ from sqlalchemy_declarative_extensions.alembic.base import (
     register_renderer_dispatcher,
     register_rewriter_dispatcher,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    GrantStatement,
+    GrantTypes,
+)
 from sqlalchemy_declarative_extensions.grant import compare
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.grant.compare import (
@@ -34,6 +38,14 @@ def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     if not result:
         return
 
+    object_grant_ops = []
+    early_ops = []
+    for grant_op in result:
+        if _grants_on_object(grant_op):
+            object_grant_ops.append(grant_op)
+        else:
+            early_ops.append(grant_op)
+
     # Find the index of the last element of a role ops, which this needs to be after.
     last_role_index = -1
     for index, op in enumerate(upgrade_ops.ops):
@@ -42,7 +54,16 @@ def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
 
     # Insert after that point
     after_last_role_index = last_role_index + 1
-    upgrade_ops.ops[after_last_role_index:after_last_role_index] = result  # type: ignore
+    upgrade_ops.ops[after_last_role_index:after_last_role_index] = early_ops  # type: ignore
+    upgrade_ops.ops.extend(object_grant_ops)  # type: ignore
+
+
+def _grants_on_object(op: Operation) -> bool:
+    return (
+        isinstance(op, GrantPrivilegesOp)
+        and isinstance(op.grant, GrantStatement)
+        and op.grant.grant_type != GrantTypes.schema
+    )
 
 
 def render_grant(_, op: Operation):

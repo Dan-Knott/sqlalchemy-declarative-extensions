@@ -206,12 +206,13 @@ class GrantTypes(FromStrings):
     @classmethod
     def _str_to_kind(cls):
         return {
-            "f": cls.function,
             "n": cls.schema,
             "S": cls.sequence,
             "r": cls.table,
-            "T": cls.type,
+            "p": cls.table,
             "v": cls.table,
+            "m": cls.table,
+            "f": cls.table,
         }
 
     @classmethod

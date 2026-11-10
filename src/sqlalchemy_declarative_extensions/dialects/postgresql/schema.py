@@ -236,49 +236,58 @@ default_acl_query = select(
     )
 )
 
-object_acl_relkinds = char_literals("r", "S", "f", "n", "T", "v")
+relation_acl_relkinds = char_literals("r", "p", "v", "m", "f", "S")
 namespace_acl_relkind = literal("n", char)
-object_acl_query = union(
-    select(
-        pg_namespace.c.nspname.label("schema"),
-        pg_class.c.relname.label("name"),
-        pg_class.c.relkind.cast(char).label("relkind"),
-        pg_roles.c.rolname.label("owner"),
-        pg_class.c.relacl.cast(ARRAY(String)).label("acl"),
-    )
-    .select_from(
-        pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid).join(
-            pg_roles, pg_class.c.relowner == pg_roles.c.oid
+
+
+def _relation_acl():
+    return (
+        select(
+            pg_namespace.c.nspname.label("schema"),
+            pg_class.c.relname.label("name"),
+            pg_class.c.relkind.cast(char).label("relkind"),
+            pg_roles.c.rolname.label("owner"),
+            pg_class.c.relacl.cast(ARRAY(String)).label("acl"),
         )
+        .select_from(
+            pg_class.join(
+                pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid
+            ).join(pg_roles, pg_class.c.relowner == pg_roles.c.oid)
+        )
+        .where(pg_class.c.relkind.cast(char).in_(relation_acl_relkinds))
+        .where(_table_not_pg)
+        .where(_schema_not_pg())
     )
-    .where(pg_class.c.relkind.cast(char).in_(object_acl_relkinds))
-    .where(_table_not_pg)
-    .where(_schema_not_pg()),
-    select(
-        literal(None).label("schema"),
-        pg_namespace.c.nspname.label("name"),
-        namespace_acl_relkind.label("relkind"),
-        pg_roles.c.rolname.label("owner"),
-        pg_namespace.c.nspacl.cast(ARRAY(String)),
+
+
+def _namespace_acl(*where):
+    return (
+        select(
+            literal(None).label("schema"),
+            pg_namespace.c.nspname.label("name"),
+            namespace_acl_relkind.label("relkind"),
+            pg_roles.c.rolname.label("owner"),
+            pg_namespace.c.nspacl.cast(ARRAY(String)).label("acl"),
+        )
+        .select_from(
+            pg_namespace.join(pg_roles, pg_namespace.c.nspowner == pg_roles.c.oid)
+        )
+        .where(*where)
     )
-    .select_from(pg_namespace.join(pg_roles, pg_namespace.c.nspowner == pg_roles.c.oid))
-    .where(_schema_not_pg())
-    .where(_schema_not_public),
+
+
+object_acl_query = union(
+    _relation_acl(),
+    _namespace_acl(_schema_not_pg(), _schema_not_public),
 )
 
-objects_query = (
-    select(
-        pg_namespace.c.nspname.label("schema"),
-        pg_class.c.relname.label("object_name"),
-        pg_class.c.relkind.cast(char).label("relkind"),
-    )
-    .select_from(
-        pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid)
-    )
-    .where(pg_class.c.relkind.cast(char).in_(object_acl_relkinds))
-    .where(_table_not_pg)
-    .where(_schema_not_pg())
-    .where(_schema_not_from_extension())
+public_schema_acl_query = _namespace_acl(pg_namespace.c.nspname == "public")
+
+_objects = _relation_acl().where(_schema_not_from_extension()).alias("objects")
+objects_query = select(
+    _objects.c.schema,
+    _objects.c.name.label("object_name"),
+    _objects.c.relkind,
 )
 
 view_relkinds = char_literals("v", "m")

@@ -32,6 +32,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     get_procedures_query,
     object_acl_query,
     objects_query,
+    public_schema_acl_query,
     roles_query,
     schema_exists_query,
     schemas_query,
@@ -142,8 +143,13 @@ def get_grants_postgresql(
     connection: Connection,
     roles: Container[str] | None = None,
     expanded=False,
+    public_schema: bool = False,
 ):
-    existing_permissions = connection.execute(object_acl_query).fetchall()
+    existing_permissions = list(connection.execute(object_acl_query).fetchall())
+    if public_schema:
+        existing_permissions.extend(
+            connection.execute(public_schema_acl_query).fetchall()
+        )
 
     result = []
     for permission in existing_permissions:

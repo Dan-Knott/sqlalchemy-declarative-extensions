@@ -47,6 +47,7 @@ class Role(generic.Role):
         return cls(
             r.rolname,
             superuser=r.rolsuper,
+            inherit=r.rolinherit,
             createdb=r.rolcreatedb,
             createrole=r.rolcreaterole,
             login=r.rolcanlogin,
@@ -65,6 +66,8 @@ class Role(generic.Role):
                 in_roles=sorted(r.in_roles, key=generic.by_name)
                 if r.in_roles
                 else None,
+                external=r.external,
+                use_role=r.use_role,
             )
 
         return r
@@ -112,7 +115,7 @@ class Role(generic.Role):
         result = []
 
         if self.use_role:
-            result.append(f"""SET ROLE "{generic.quote_name(self.use_role)}";""")
+            result.append(f"SET ROLE {generic.quote_name(self.use_role)};")
 
         diff_options = postgres_render_role_options(diff, raw=raw)
         if diff_options:
@@ -129,7 +132,7 @@ class Role(generic.Role):
             )
 
         if self.use_role:
-            result.append("RESET ROLE")
+            result.append("RESET ROLE;")
         return result
 
     def to_sql_drop(self, raw: bool = True) -> list[str]:

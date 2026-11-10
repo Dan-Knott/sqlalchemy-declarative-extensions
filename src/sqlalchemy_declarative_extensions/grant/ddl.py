@@ -8,9 +8,13 @@ from sqlalchemy_declarative_extensions.grant.compare import compare_grants
 from sqlalchemy_declarative_extensions.role.base import Roles
 
 
-def grant_ddl(grants: Grants, roles: Roles | None = None):
+def grant_ddl(
+    grants: Grants, roles: Roles | None = None, *, object_grants: bool = True
+):
     def receive_event(metadata: MetaData, connection: Connection, **_):
-        result = compare_grants(connection, grants, roles=roles)
+        result = compare_grants(
+            connection, grants, roles=roles, object_grants=object_grants
+        )
         for op in result:
             connection.execute(op.to_sql())
 
