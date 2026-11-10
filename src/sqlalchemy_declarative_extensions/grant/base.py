@@ -7,6 +7,7 @@ from sqlalchemy import MetaData
 from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.dialects import postgresql
+from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
 G = Union[postgresql.DefaultGrantStatement, postgresql.GrantStatement]
 
@@ -106,8 +107,27 @@ class Grants:
             default_grants_imply_grants=default_grants_imply_grants,
         )
 
+    def append(self, grant: G):
+        self.grants.append(grant)
+
     def __iter__(self):
         yield from self.grants
 
     def are(self, *grants: G):
         return replace(self, grants=list(grants))
+
+
+def register_grant(base_or_metadata: HasMetaData | MetaData, grant: G):
+    """Register a grant onto the given declarative base or `MetaData`.
+
+    This can be used instead of the static registration through `Grants` on a declarative
+    base or `MetaData`, to imperatively register grants.
+    """
+    if isinstance(base_or_metadata, MetaData):
+        metadata = base_or_metadata
+    else:
+        metadata = base_or_metadata.metadata
+
+    if not metadata.info.get("grants"):
+        metadata.info["grants"] = Grants()
+    metadata.info["grants"].append(grant)

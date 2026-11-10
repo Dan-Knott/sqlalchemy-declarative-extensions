@@ -34,6 +34,7 @@ import itertools
 from dataclasses import dataclass, replace
 from typing import Generic
 
+from sqlalchemy import MetaData
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.sql.expression import text
 
@@ -44,12 +45,18 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     GrantTypes,
 )
 from sqlalchemy_declarative_extensions.sql import HasName, coerce_name, split_schema
+from sqlalchemy_declarative_extensions.sqlalchemy import TableItem
 
 PUBLIC = "PUBLIC"
 
 
 @dataclass(frozen=True)
-class Grant(Generic[G]):
+class Grant(TableItem, Generic[G]):
+    """A grant of privileges to a role.
+
+    Declared in a table's `__table_args__`, it is granted on that table.
+    """
+
     grants: tuple[str | G, ...]
     target_role: str
     grant_option: bool = False
@@ -68,6 +75,11 @@ class Grant(Generic[G]):
             target_role=_coerce_role_name(to),
             grant_option=grant_option,
         )
+
+    def attach(self, metadata: MetaData, table_name: str) -> None:
+        from sqlalchemy_declarative_extensions.grant.base import register_grant
+
+        register_grant(metadata, self.on_tables(table_name))
 
     def revoke(self) -> Grant:
         return replace(self, revoke_=True)
