@@ -29,13 +29,13 @@ class Base(_Base):  # type: ignore
         Grant.new("execute", to=reader).on_objects(
             "one", object_type=GrantTypes.function
         ),
-        Grant.new("select", "insert", to=reader).on_tables("foo"),
         Grant.new("select", to=reader).on_tables("bar"),
     )
 
 
 class Foo(Base):
     __tablename__ = "foo"
+    __table_args__ = (Grant.new("select", "insert", to=reader),)
 
     id = Column(types.Integer(), primary_key=True)
 

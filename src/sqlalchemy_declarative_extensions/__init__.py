@@ -11,7 +11,7 @@ from sqlalchemy_declarative_extensions.function import (
     Functions,
     register_function,
 )
-from sqlalchemy_declarative_extensions.grant import Grants
+from sqlalchemy_declarative_extensions.grant import Grants, register_grant
 from sqlalchemy_declarative_extensions.procedure import (
     Procedure,
     Procedures,
@@ -70,6 +70,7 @@ __all__ = [
     "dialects",
     "register_alembic_events",
     "register_function",
+    "register_grant",
     "register_procedure",
     "register_sqlalchemy_events",
     "register_trigger",
