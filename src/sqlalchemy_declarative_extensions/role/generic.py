@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Sequence
 
 from sqlalchemy_declarative_extensions.context import context
@@ -28,7 +28,7 @@ class Role:
     in_roles: list[Role | str] | None = None
     external: bool = False
 
-    use_role: Role | str | None = None
+    use_role: Role | str | None = field(default=None, compare=False)
 
     def __post_init__(self):
         if self.use_role:

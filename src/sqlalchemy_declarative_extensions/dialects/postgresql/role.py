@@ -66,6 +66,8 @@ class Role(generic.Role):
                 in_roles=sorted(r.in_roles, key=generic.by_name)
                 if r.in_roles
                 else None,
+                external=r.external,
+                use_role=r.use_role,
             )
 
         return r

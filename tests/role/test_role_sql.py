@@ -1,6 +1,18 @@
 from unittest.mock import Mock
 
+from sqlalchemy_declarative_extensions import Role as GenericRole
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
+
+
+def test_from_unknown_role_keeps_use_role():
+    role = Role.from_unknown_role(GenericRole("app", use_role="admin", external=True))
+
+    assert role.use_role == "admin"
+    assert role.external is True
+
+
+def test_use_role_is_not_compared():
+    assert Role("app", use_role="admin") == Role("app")
 
 
 def test_from_pg_role_reads_inherit():
