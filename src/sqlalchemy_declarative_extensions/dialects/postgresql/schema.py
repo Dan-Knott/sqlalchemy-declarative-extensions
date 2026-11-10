@@ -236,7 +236,7 @@ default_acl_query = select(
     )
 )
 
-object_acl_relkinds = char_literals("r", "S", "f", "n", "T", "v")
+object_acl_relkinds = char_literals("r", "S", "f", "n", "T", "v", "p", "m")
 namespace_acl_relkind = literal("n", char)
 object_acl_query = union(
     select(
