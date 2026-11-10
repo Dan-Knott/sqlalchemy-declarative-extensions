@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.20
+
+### 0.20.0
+
+- feat: Declare a `Grant` in a table's `__table_args__`, and add `register_grant`.
+- feat: Manage any `Role` object a grant is given (`to=`), as though declared in `Roles`.
+- feat: Attach grants and triggers declared in a `view`'s `__table_args__` to the view.
+- feat: Manage grants on functions and types (enums, domains, ranges).
+  `DefaultGrant.on_functions_in_schema`/`on_types_in_schema` now also imply grants on
+  existing functions/types. Overloaded functions are skipped, since a grant on them
+  would be ambiguous.
+- fix: Apply grants on tables and views after they are created, in both
+  `metadata.create_all` and alembic revisions.
+- fix: Detect existing grants on materialized views, partitioned tables and foreign
+  tables, so they are not re-granted every time.
+- fix: Detect existing grants on the `public` schema, when any grant on it is declared.
+- fix: Render grants to `PUBLIC` unquoted, and include them in comparisons when declared.
+- fix: Compare explicitly declared grants when `default_grants_imply_grants=False`
+  (grants arising from default grants are left alone).
+- fix: (Postgres) Read a role's `inherit` option back from the database.
+- fix: Keep `use_role`/`external` when converting a generic `Role` to a dialect role,
+  and stop treating `use_role` as a difference between roles.
+- fix: Quoting in `ALTER ROLE` statements run as `use_role`, and a missing space in
+  generic `CREATE ROLE ... IN ROLE`.
+
 ## 0.19
 
 ### 0.19.0
