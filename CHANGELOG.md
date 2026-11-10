@@ -2,6 +2,17 @@
 
 ## 0.19
 
+### 0.19.1
+
+- fix: Apply grants on tables and views after they are created
+- fix: Detect grants on materialized views, partitioned and foreign tables
+- fix: Detect existing grants on the public schema
+- fix: Render grants to PUBLIC unquoted, and compare them when declared
+- fix: Compare explicitly declared grants without implied grants
+- fix: (Postgres) Read a role's inherit option back from the database
+- fix: Keep use_role/external when converting a generic Role
+- fix: Quote ALTER ROLE as use_role, and space CREATE ROLE IN ROLE
+
 ### 0.19.0
 
 - feat: Accept a `Function` as a trigger's `execute`, creating it alongside the trigger.
