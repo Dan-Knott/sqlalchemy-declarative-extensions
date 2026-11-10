@@ -30,6 +30,7 @@ from typing_extensions import Self
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import (
     HasMetaData,
+    TableItem,
     create_mapper,
     escape_params,
 )
@@ -98,6 +99,10 @@ def view(
         instance = DeclarativeView(cls, materialized)
 
         register_view(base, instance)
+
+        view_name = qualify_name(instance.schema, instance.name)
+        for item in instance.table_items:
+            item.attach(metadata, view_name)
 
         if register_as_model:
             return instrument_sqlalchemy(base, cls)
@@ -176,6 +181,14 @@ class DeclarativeView:
             ]
 
         return None
+
+    @property
+    def table_items(self) -> list[TableItem]:
+        table_args = self.table_args
+        if isinstance(table_args, dict) or not isinstance(table_args, Iterable):
+            return []
+
+        return [arg for arg in table_args if isinstance(arg, TableItem)]
 
 
 @dataclass

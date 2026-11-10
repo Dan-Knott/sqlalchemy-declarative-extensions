@@ -7,6 +7,7 @@ from sqlalchemy_declarative_extensions import (
     Roles,
     declarative_database,
     register_sqlalchemy_events,
+    view,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql import Grant, Role
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants
@@ -29,7 +30,14 @@ class Foo(Base):
     id = Column(types.Integer(), primary_key=True)
 
 
-register_sqlalchemy_events(Base.metadata, roles=True, grants=True)
+@view(Base)
+class Bar:
+    __tablename__ = "bar"
+    __table_args__ = (Grant.new("select", to=reader),)
+    __view__ = "SELECT id FROM foo"
+
+
+register_sqlalchemy_events(Base.metadata, roles=True, grants=True, views=True)
 
 
 _LateBase = declarative_base()
@@ -54,13 +62,13 @@ pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
 
 
 @pytest.mark.grant
-def test_create_all_grants_on_table(pg):
+def test_create_all_grants_on_table_and_view(pg):
     Base.metadata.create_all(bind=pg)
 
     with pg.connect() as conn:
         conn.execute(text("SET ROLE reader"))
         conn.execute(text("INSERT INTO foo VALUES (1)"))
-        result = conn.execute(text("SELECT id FROM foo")).scalars().all()
+        result = conn.execute(text("SELECT id FROM bar")).scalars().all()
         conn.execute(text("RESET ROLE"))
 
         diff = compare_grants(

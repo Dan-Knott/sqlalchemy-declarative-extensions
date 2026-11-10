@@ -54,7 +54,7 @@ PUBLIC = "PUBLIC"
 class Grant(TableItem, Generic[G]):
     """A grant of privileges to a role.
 
-    Declared in a table's `__table_args__`, it is granted on that table.
+    Declared in a table's (or `view`'s) `__table_args__`, it is granted on that table.
     When `to` is a `Role` object, rather than a name, that role is registered as well.
     """
 
