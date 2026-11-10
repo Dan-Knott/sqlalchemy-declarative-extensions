@@ -47,6 +47,7 @@ class Role(generic.Role):
         return cls(
             r.rolname,
             superuser=r.rolsuper,
+            inherit=r.rolinherit,
             createdb=r.rolcreatedb,
             createrole=r.rolcreaterole,
             login=r.rolcanlogin,
