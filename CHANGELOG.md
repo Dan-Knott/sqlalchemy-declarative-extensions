@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.20
+
+### 0.20.0
+
+- feat: Manage grants on functions and types (enums, domains, ranges)
+- feat: Declare a Grant in a table's __table_args__, and add register_grant
+- feat: Manage any Role object a grant is given, as though declared in Roles
+- feat: Attach grants and triggers declared in a view's __table_args__
+
 ## 0.19
 
 ### 0.19.1
