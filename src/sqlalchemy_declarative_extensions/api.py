@@ -262,7 +262,7 @@ def register_create_events(
         event.listen(
             metadata,
             "before_create",
-            grant_ddl(concrete_grants, concrete_roles),
+            grant_ddl(concrete_grants, concrete_roles, object_grants=False),
         )
         # There should(?) be no need to handle dropping for grants,
         # they will be handled directly by table handling.
@@ -297,6 +297,13 @@ def register_create_events(
             metadata,
             "after_create",
             trigger_ddl(concrete_triggers, trigger_filter),
+        )
+
+    if grants:
+        event.listen(
+            metadata,
+            "after_create",
+            grant_ddl(concrete_grants, concrete_roles),
         )
 
     if rows:

@@ -47,7 +47,11 @@ Operation = Union[GrantPrivilegesOp, RevokePrivilegesOp]
 
 
 def compare_grants(
-    connection: Connection, grants: Grants, roles: Roles | None = None
+    connection: Connection,
+    grants: Grants,
+    roles: Roles | None = None,
+    *,
+    object_grants: bool = True,
 ) -> list[Operation]:
     result: list[Operation] = []
 
@@ -61,7 +65,7 @@ def compare_grants(
     default_grant_ops = compare_default_grants(connection, grants, roles=filtered_roles)
     result.extend(default_grant_ops)
 
-    if grants.default_grants_imply_grants:
+    if object_grants and grants.default_grants_imply_grants:
         grant_ops = compare_object_grants(
             connection, grants, username=current_role, roles=filtered_roles
         )
