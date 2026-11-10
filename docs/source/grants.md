@@ -58,11 +58,12 @@ would be ambiguous.
 
 ## Table-level grants
 
-A `Grant` can be declared inline on the table it applies to, through
+A `Grant` can be declared inline on the table (or `view`) it applies to, through
 `__table_args__`, in the same way as an `Index` or a `Trigger`.
 
 ```python
 from sqlalchemy import Column, types
+from sqlalchemy_declarative_extensions import view
 from sqlalchemy_declarative_extensions.dialects.postgresql import Grant, Role
 
 reader = Role("reader")
@@ -73,6 +74,13 @@ class Foo(Base):
     __table_args__ = (Grant.new("select", "insert", to=reader),)
 
     id = Column(types.Integer(), primary_key=True)
+
+
+@view(Base)
+class Bar:
+    __tablename__ = "bar"
+    __table_args__ = (Grant.new("select", to=reader),)
+    __view__ = "SELECT id FROM foo"
 ```
 
 The grant is registered against the same `MetaData` as one declared through `Grants`

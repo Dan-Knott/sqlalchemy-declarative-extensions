@@ -1,8 +1,14 @@
 import pytest
 from sqlalchemy import Column, types
 
-from sqlalchemy_declarative_extensions import Grants, Roles, declare_database
-from sqlalchemy_declarative_extensions.dialects.postgresql import Grant, Role
+from sqlalchemy_declarative_extensions import (
+    Grants,
+    Roles,
+    Triggers,
+    declare_database,
+    view,
+)
+from sqlalchemy_declarative_extensions.dialects.postgresql import Grant, Role, Trigger
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 
@@ -116,3 +122,35 @@ def test_roles_combine_across_metadata():
     roles = Roles.extract([declared.metadata, inline.metadata])
 
     assert [r.name for r in roles] == ["read", "app"]
+
+
+def create_view_base():
+    base = create_base()
+
+    @view(base)
+    class Foo:
+        __tablename__ = "foo"
+        __table_args__ = (
+            Grant.new("select", to="read"),
+            Trigger.instead_of("insert", execute="noop").named("on_insert_foo"),
+            {"schema": "bar"},
+        )
+        __view__ = "SELECT 1 AS id"
+
+    return base
+
+
+def test_view_attaches_grant():
+    base = create_view_base()
+
+    (grant,) = Grants.extract(base.metadata)
+
+    assert grant.targets == ("bar.foo",)
+
+
+def test_view_attaches_trigger():
+    base = create_view_base()
+
+    (trigger,) = Triggers.extract(base.metadata)
+
+    assert trigger.on == "bar.foo"

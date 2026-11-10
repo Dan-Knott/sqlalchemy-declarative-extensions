@@ -26,8 +26,7 @@ class Base(_Base):  # type: ignore
     grants = Grants().are(
         Grant.new("execute", to=reader).on_objects(
             "one", object_type=GrantTypes.function
-        ),
-        Grant.new("select", to=reader).on_tables("bar"),
+        )
     )
 
 
@@ -41,4 +40,5 @@ class Foo(Base):
 @view(Base)
 class Bar:
     __tablename__ = "bar"
+    __table_args__ = (Grant.new("select", to=reader),)
     __view__ = "SELECT id FROM foo"
