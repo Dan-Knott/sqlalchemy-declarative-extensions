@@ -1,20 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Any, Hashable, Iterable, Sequence
+from typing import Hashable, Iterable, Sequence
 
-from sqlalchemy import MetaData, Table
+from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
-from sqlalchemy.sql.schema import SchemaItem
 from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.function.base import Function, Functions
-from sqlalchemy_declarative_extensions.sql import qualify_name
-from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
+from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData, TableItem
 
 
 @dataclass
-class Trigger(SchemaItem):
+class Trigger(TableItem):
     """Describes a generic trigger.
 
     `execute` is either the statement/name to execute, or (for dialects whose triggers
@@ -45,24 +43,19 @@ class Trigger(SchemaItem):
     def named(self, name: str):
         return replace(self, name=name)
 
-    def _set_parent(self, parent: Any, **kw: Any) -> None:
-        """Attach to the `Table` __table_args__ it was declared in."""
-        if not isinstance(parent, Table):
+    def attach(self, metadata: MetaData, table_name: str) -> None:
+        if not self.name:
             raise ValueError(
-                f"Trigger can only be attached to a `Table`, got: {parent}."
+                f"Trigger attached to table '{table_name}' must have a name."
             )
 
-        on = qualify_name(parent.schema, parent.name)
-        if not self.name:
-            raise ValueError(f"Trigger attached to table '{on}' must have a name.")
-
-        if self.on and self.on != on:
+        if self.on and self.on != table_name:
             raise ValueError(
                 f"Trigger '{self.name}' declares `on='{self.on}'`,"
-                f" which conflicts with the table it is attached to: '{on}'."
+                f" which conflicts with the table it is attached to: '{table_name}'."
             )
 
-        register_trigger(parent.metadata, replace(self, on=on))
+        register_trigger(metadata, replace(self, on=table_name))
 
     def to_sql_create(self):
         raise NotImplementedError()

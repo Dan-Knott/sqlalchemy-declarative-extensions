@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import re
-from typing import Callable, TypeVar
+from typing import Any, Callable, TypeVar
 
 import sqlalchemy
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import Connection
+from sqlalchemy.sql.schema import SchemaItem
 from typing_extensions import Concatenate, ParamSpec
 
+from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.typing import Protocol
 
 version = getattr(sqlalchemy, "__version__", "1.3")
@@ -15,6 +17,22 @@ version = getattr(sqlalchemy, "__version__", "1.3")
 
 class HasMetaData(Protocol):
     metadata: MetaData
+
+
+class TableItem(SchemaItem):
+    """An object which can be declared in a table's (or a `view`'s) `__table_args__`."""
+
+    def attach(self, metadata: MetaData, table_name: str) -> None:
+        """Register this object onto `metadata`, targeting the (qualified) `table_name`."""
+        raise NotImplementedError()
+
+    def _set_parent(self, parent: Any, **kw: Any) -> None:
+        if not isinstance(parent, Table):
+            raise ValueError(
+                f"{type(self).__name__} can only be attached to a `Table`, got: {parent}."
+            )
+
+        self.attach(parent.metadata, qualify_name(parent.schema, parent.name))
 
 
 T = TypeVar("T")
@@ -114,4 +132,5 @@ __all__ = [
     "HasMetaData",
     "row_to_dict",
     "select",
+    "TableItem",
 ]

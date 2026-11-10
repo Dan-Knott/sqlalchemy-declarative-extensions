@@ -43,15 +43,9 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     GrantOptions,
     GrantTypes,
 )
-from sqlalchemy_declarative_extensions.sql import split_schema
-from sqlalchemy_declarative_extensions.typing import Protocol, runtime_checkable
+from sqlalchemy_declarative_extensions.sql import HasName, coerce_name, split_schema
 
 PUBLIC = "PUBLIC"
-
-
-@runtime_checkable
-class HasName(Protocol):
-    name: str
 
 
 @dataclass(frozen=True)
@@ -85,7 +79,7 @@ class Grant(Generic[G]):
         variants = object_type.to_variants()
         grant = replace(self, grants=tuple(_map_grant_names(variants, *self.grants)))
 
-        names = [_coerce_name(obj) for obj in objects]
+        names = [coerce_name(obj) for obj in objects]
         return GrantStatement(grant, grant_type=object_type, targets=tuple(names))
 
     def on_tables(self, *tables: str | HasName):
@@ -115,7 +109,7 @@ class DefaultGrant:
         return cls(
             grant_type=DefaultGrantTypes.table,
             in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     @classmethod
@@ -126,7 +120,7 @@ class DefaultGrant:
         return cls(
             grant_type=DefaultGrantTypes.sequence,
             in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     @classmethod
@@ -137,7 +131,7 @@ class DefaultGrant:
         return cls(
             grant_type=DefaultGrantTypes.type,
             in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     @classmethod
@@ -148,11 +142,11 @@ class DefaultGrant:
         return cls(
             grant_type=DefaultGrantTypes.function,
             in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     def for_role(self, role: HasName | str):
-        return replace(self, target_role=_coerce_name(role))
+        return replace(self, target_role=coerce_name(role))
 
     def grant(
         self,
@@ -180,7 +174,7 @@ class DefaultGrantStatement(Generic[G]):
     def for_role(self, role: str | HasName) -> DefaultGrantStatement:
         return replace(
             self,
-            default_grant=replace(self.default_grant, target_role=_coerce_name(role)),
+            default_grant=replace(self.default_grant, target_role=coerce_name(role)),
         )
 
     def invert(self) -> DefaultGrantStatement:
@@ -378,7 +372,7 @@ def _render_grant_option(grant: Grant) -> str | None:
 
 
 def _map_schema_names(*schemas: str | HasName):
-    return sorted([_coerce_name(s) for s in schemas])
+    return sorted([coerce_name(s) for s in schemas])
 
 
 def _map_grant_names(variant: G, *grants: str | G):
@@ -387,14 +381,8 @@ def _map_grant_names(variant: G, *grants: str | G):
     )
 
 
-def _coerce_name(name: str | HasName):
-    if isinstance(name, HasName):
-        return name.name
-    return name
-
-
 def _coerce_role_name(role: str | HasName) -> str:
-    name = _coerce_name(role)
+    name = coerce_name(role)
     if name.upper() == PUBLIC:
         return PUBLIC
     return name
