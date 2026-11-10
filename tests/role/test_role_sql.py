@@ -4,6 +4,24 @@ from sqlalchemy_declarative_extensions import Role as GenericRole
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
 
 
+def test_generic_create_in_role():
+    role = GenericRole("app", in_roles=["read"])
+
+    assert role.to_sql_create() == ['CREATE ROLE "app" IN ROLE "read";']
+
+
+def test_update_with_use_role():
+    role = Role("app", login=False, use_role="admin")
+
+    sql = role.to_sql_update(Role("app", login=True))
+
+    assert sql == [
+        'SET ROLE "admin";',
+        'ALTER ROLE "app" WITH LOGIN;',
+        "RESET ROLE;",
+    ]
+
+
 def test_from_unknown_role_keeps_use_role():
     role = Role.from_unknown_role(GenericRole("app", use_role="admin", external=True))
 

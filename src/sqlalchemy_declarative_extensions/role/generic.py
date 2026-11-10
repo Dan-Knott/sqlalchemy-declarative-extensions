@@ -81,7 +81,7 @@ class Role:
     def to_sql_create(self, raw: bool = True) -> list[str]:
         statement = f"CREATE ROLE {quote_name(self.name)}"
         if self.in_roles is not None:
-            statement += f"IN ROLE {quote_names(self.in_roles)}"
+            statement += f" IN ROLE {quote_names(self.in_roles)}"
         return [statement + ";"]
 
     def to_sql_update(self, to_role, raw: bool = True) -> list[str]:
