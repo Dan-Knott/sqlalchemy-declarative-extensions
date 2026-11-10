@@ -141,7 +141,15 @@ def compare_object_grants(
                         grant.grant.on_objects(table, object_type=object_type).explode()
                     )
 
-    existing_grants = get_grants(connection, roles=roles, expanded=True)
+    targets_public_schema = any(
+        isinstance(grant, GrantStatement)
+        and grant.grant_type == GrantTypes.schema
+        and "public" in grant.targets
+        for grant in grants
+    )
+    existing_grants = get_grants(
+        connection, roles=roles, expanded=True, public_schema=targets_public_schema
+    )
 
     if grants.ignore_self_grants:
         existing_grants = [

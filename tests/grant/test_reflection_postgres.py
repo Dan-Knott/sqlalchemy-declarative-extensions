@@ -28,6 +28,11 @@ roles = Roles().are("app")
             Grants().are(Grant.new("select", to="app").on_tables("p")),
             id="partitioned_table",
         ),
+        pytest.param(
+            "SELECT 1",
+            Grants().are(Grant.new("create", to="app").on_schemas("public")),
+            id="public_schema",
+        ),
     ],
 )
 def test_grant_is_applied_once(pg, setup: str, grants: Grants):

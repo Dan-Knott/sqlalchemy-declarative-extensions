@@ -266,6 +266,18 @@ object_acl_query = union(
     .where(_schema_not_public),
 )
 
+public_schema_acl_query = (
+    select(
+        literal(None).label("schema"),
+        pg_namespace.c.nspname.label("name"),
+        namespace_acl_relkind.label("relkind"),
+        pg_roles.c.rolname.label("owner"),
+        pg_namespace.c.nspacl.cast(ARRAY(String)).label("acl"),
+    )
+    .select_from(pg_namespace.join(pg_roles, pg_namespace.c.nspowner == pg_roles.c.oid))
+    .where(pg_namespace.c.nspname == "public")
+)
+
 objects_query = (
     select(
         pg_namespace.c.nspname.label("schema"),
