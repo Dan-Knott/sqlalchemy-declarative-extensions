@@ -21,8 +21,6 @@ reader = Role("reader")
 class Base(_Base):  # type: ignore
     __abstract__ = True
 
-    roles = Roles(ignore_unspecified=True).are(reader)
-
 
 class Foo(Base):
     __tablename__ = "foo"
@@ -40,8 +38,6 @@ _LateBase = declarative_base()
 @declarative_database
 class LateBase(_LateBase):  # type: ignore
     __abstract__ = True
-
-    roles = Roles(ignore_unspecified=True).are(reader)
 
 
 register_sqlalchemy_events(LateBase.metadata, roles=True, grants=True)
