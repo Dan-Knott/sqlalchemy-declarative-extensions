@@ -32,9 +32,6 @@ def register_alembic_events(
     if roles:
         import sqlalchemy_declarative_extensions.alembic.role
 
-    if grants:
-        import sqlalchemy_declarative_extensions.alembic.grant
-
     if functions:
         import sqlalchemy_declarative_extensions.alembic.function
 
@@ -45,7 +42,10 @@ def register_alembic_events(
         import sqlalchemy_declarative_extensions.alembic.trigger
 
     if rows:
-        import sqlalchemy_declarative_extensions.alembic.row  # noqa
+        import sqlalchemy_declarative_extensions.alembic.row
+
+    if grants:
+        import sqlalchemy_declarative_extensions.alembic.grant  # noqa
 
 
 def _traverse_any_directive(self, context, revision, directive) -> None:

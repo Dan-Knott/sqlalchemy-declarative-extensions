@@ -110,6 +110,8 @@ pg_proc = table(
     "pg_proc",
     column("oid"),
     column("proname"),
+    column("proowner"),
+    column("proacl"),
     column("prosrc"),
     column("pronamespace"),
     column("prolang"),
@@ -152,6 +154,10 @@ pg_type = table(
     "pg_type",
     column("oid"),
     column("typname"),
+    column("typnamespace"),
+    column("typowner"),
+    column("typacl"),
+    column("typtype", char),
 )
 
 
@@ -237,7 +243,10 @@ default_acl_query = select(
 )
 
 relation_acl_relkinds = char_literals("r", "p", "v", "m", "f", "S")
+function_acl_relkind = literal("F", char)
+type_acl_relkind = literal("T", char)
 namespace_acl_relkind = literal("n", char)
+type_acl_typtypes = char_literals("e", "d", "r")
 
 
 def _relation_acl():
@@ -260,6 +269,57 @@ def _relation_acl():
     )
 
 
+def _function_acl():
+    return (
+        select(
+            pg_namespace.c.nspname.label("schema"),
+            pg_proc.c.proname.label("name"),
+            function_acl_relkind.label("relkind"),
+            pg_roles.c.rolname.label("owner"),
+            pg_proc.c.proacl.cast(ARRAY(String)).label("acl"),
+        )
+        .select_from(
+            pg_proc.join(
+                pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid
+            ).join(pg_roles, pg_proc.c.proowner == pg_roles.c.oid)
+        )
+        .where(pg_proc.c.prokind.cast(char) == literal("f", char))
+        .where(_not_from_extension(pg_proc.c.oid, "pg_proc"))
+        .where(_schema_not_pg())
+        .where(~_is_overloaded())
+    )
+
+
+def _is_overloaded():
+    overload = pg_proc.alias("overload")
+    return (
+        exists()
+        .where(overload.c.pronamespace == pg_proc.c.pronamespace)
+        .where(overload.c.proname == pg_proc.c.proname)
+        .where(overload.c.oid != pg_proc.c.oid)
+    )
+
+
+def _type_acl():
+    return (
+        select(
+            pg_namespace.c.nspname.label("schema"),
+            pg_type.c.typname.label("name"),
+            type_acl_relkind.label("relkind"),
+            pg_roles.c.rolname.label("owner"),
+            pg_type.c.typacl.cast(ARRAY(String)).label("acl"),
+        )
+        .select_from(
+            pg_type.join(
+                pg_namespace, pg_type.c.typnamespace == pg_namespace.c.oid
+            ).join(pg_roles, pg_type.c.typowner == pg_roles.c.oid)
+        )
+        .where(pg_type.c.typtype.cast(char).in_(type_acl_typtypes))
+        .where(_not_from_extension(pg_type.c.oid, "pg_type"))
+        .where(_schema_not_pg())
+    )
+
+
 def _namespace_acl(*where):
     return (
         select(
@@ -278,12 +338,18 @@ def _namespace_acl(*where):
 
 object_acl_query = union(
     _relation_acl(),
+    _function_acl(),
+    _type_acl(),
     _namespace_acl(_schema_not_pg(), _schema_not_public),
 )
 
 public_schema_acl_query = _namespace_acl(pg_namespace.c.nspname == "public")
 
-_objects = _relation_acl().where(_schema_not_from_extension()).alias("objects")
+_objects = union(
+    _relation_acl().where(_schema_not_from_extension()),
+    _function_acl(),
+    _type_acl(),
+).alias("objects")
 objects_query = select(
     _objects.c.schema,
     _objects.c.name.label("object_name"),

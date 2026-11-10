@@ -3,7 +3,11 @@ from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import text
 
 from sqlalchemy_declarative_extensions import Grants, Roles
-from sqlalchemy_declarative_extensions.dialects.postgresql import Grant
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    DefaultGrant,
+    Grant,
+    GrantTypes,
+)
 from sqlalchemy_declarative_extensions.grant.compare import (
     GrantPrivilegesOp,
     compare_grants,
@@ -27,6 +31,32 @@ roles = Roles().are("app")
             "CREATE TABLE p (id int) PARTITION BY RANGE (id)",
             Grants().are(Grant.new("select", to="app").on_tables("p")),
             id="partitioned_table",
+        ),
+        pytest.param(
+            "CREATE FUNCTION f() RETURNS int LANGUAGE sql AS 'SELECT 1'",
+            Grants().are(
+                Grant.new("execute", to="app").on_objects(
+                    "f", object_type=GrantTypes.function
+                )
+            ),
+            id="function",
+        ),
+        pytest.param(
+            "CREATE FUNCTION f(int) RETURNS int LANGUAGE sql AS 'SELECT 1';"
+            "CREATE FUNCTION f(text) RETURNS int LANGUAGE sql AS 'SELECT 1'",
+            Grants().are(
+                DefaultGrant.on_functions_in_schema("public").grant("execute", to="app")
+            ),
+            id="overloaded_function",
+        ),
+        pytest.param(
+            "CREATE TYPE mood AS ENUM ('ok')",
+            Grants().are(
+                Grant.new("usage", to="app").on_objects(
+                    "mood", object_type=GrantTypes.type
+                )
+            ),
+            id="type",
         ),
         pytest.param(
             "SELECT 1",
