@@ -39,6 +39,13 @@ class TestGrant:
         expected_result = 'GRANT SELECT ON TABLE "bar", "baz" TO "foo";'
         assert expected_result == sql
 
+    @pytest.mark.parametrize("role", ("public", "PUBLIC"))
+    def test_public_is_not_quoted(self, role):
+        grant = Grant.new("usage", to=role).on_schemas("bar")
+        sql = render_sql(grant.to_sql())
+
+        assert sql == 'GRANT USAGE ON SCHEMA "bar" TO PUBLIC;'
+
     def test_on_schemas(self):
         grant = Grant.new("usage", to="foo").on_schemas("bar", "meow")
         sql = render_sql(grant.to_sql())

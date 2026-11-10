@@ -16,6 +16,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import (
     GrantStatement,
     GrantTypes,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql.grant import PUBLIC
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.op import ExecuteOp
 from sqlalchemy_declarative_extensions.role.base import Roles
@@ -61,6 +62,8 @@ def compare_grants(
     filtered_roles: set[str] | None = None
     if grants.only_defined_roles:
         filtered_roles = {r.name for r in (roles or [])}
+        if any(grant.grant.target_role == PUBLIC for grant in grants):
+            filtered_roles.add(PUBLIC)
 
     default_grant_ops = compare_default_grants(connection, grants, roles=filtered_roles)
     result.extend(default_grant_ops)

@@ -46,6 +46,8 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
 from sqlalchemy_declarative_extensions.sql import split_schema
 from sqlalchemy_declarative_extensions.typing import Protocol, runtime_checkable
 
+PUBLIC = "PUBLIC"
+
 
 @runtime_checkable
 class HasName(Protocol):
@@ -69,7 +71,7 @@ class Grant(Generic[G]):
     ) -> Grant:
         return cls(
             grants=tuple(sorted([grant, *grants])),  # type: ignore
-            target_role=_coerce_name(to),
+            target_role=_coerce_role_name(to),
             grant_option=grant_option,
         )
 
@@ -164,7 +166,7 @@ class DefaultGrant:
                 grants=tuple(
                     _map_grant_names(self.grant_type.to_variants(), grant, *grants)
                 ),
-                target_role=_coerce_name(to),
+                target_role=_coerce_role_name(to),
                 grant_option=grant_option,
             )
         return DefaultGrantStatement(self, grant)
@@ -272,7 +274,9 @@ class GrantStatement(Generic[G]):
         return replace(self, grant=replace(self.grant, revoke_=not self.grant.revoke_))
 
     def for_role(self, role: str | HasName) -> GrantStatement:
-        return replace(self, grant=replace(self.grant, target_role=_coerce_name(role)))
+        return replace(
+            self, grant=replace(self.grant, target_role=_coerce_role_name(role))
+        )
 
     def to_sql(self) -> TextClause:
         result = []
@@ -342,9 +346,16 @@ def _render_grant_or_revoke(grant: Grant) -> str:
 
 
 def _render_to_or_from(grant: Grant) -> str:
+    role = _render_role(grant.target_role)
     if grant.revoke_:
-        return f'FROM "{grant.target_role}"'
-    return f'TO "{grant.target_role}"'
+        return f"FROM {role}"
+    return f"TO {role}"
+
+
+def _render_role(role: str) -> str:
+    if role == PUBLIC:
+        return PUBLIC
+    return f'"{role}"'
 
 
 def _quote_table_name(name: str):
@@ -379,4 +390,11 @@ def _map_grant_names(variant: G, *grants: str | G):
 def _coerce_name(name: str | HasName):
     if isinstance(name, HasName):
         return name.name
+    return name
+
+
+def _coerce_role_name(role: str | HasName) -> str:
+    name = _coerce_name(role)
+    if name.upper() == PUBLIC:
+        return PUBLIC
     return name

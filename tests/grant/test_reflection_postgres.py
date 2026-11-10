@@ -33,6 +33,11 @@ roles = Roles().are("app")
             Grants().are(Grant.new("create", to="app").on_schemas("public")),
             id="public_schema",
         ),
+        pytest.param(
+            "CREATE TABLE t (id int)",
+            Grants().are(Grant.new("select", to="public").on_tables("t")),
+            id="public_role",
+        ),
     ],
 )
 def test_grant_is_applied_once(pg, setup: str, grants: Grants):
