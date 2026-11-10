@@ -6,7 +6,12 @@ from sqlalchemy_declarative_extensions import (
     declarative_database,
     view,
 )
-from sqlalchemy_declarative_extensions.dialects.postgresql import Grant, Role
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    Function,
+    Grant,
+    GrantTypes,
+    Role,
+)
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 _Base = declarative_base()
@@ -19,7 +24,11 @@ class Base(_Base):  # type: ignore
     __abstract__ = True
 
     roles = Roles(ignore_unspecified=True).are(reader)
+    functions = [Function("one", "SELECT 1", returns="integer")]
     grants = Grants().are(
+        Grant.new("execute", to=reader).on_objects(
+            "one", object_type=GrantTypes.function
+        ),
         Grant.new("select", "insert", to=reader).on_tables("foo"),
         Grant.new("select", to=reader).on_tables("bar"),
     )

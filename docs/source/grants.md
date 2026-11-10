@@ -17,6 +17,45 @@ grants = Grants().are(
 Note, while we largely document the fluent style of grant creation, it is entirely
 possible to create the underlying grants objects directly!
 
+## Supported objects
+
+A `Grant` targets specific objects, while a `DefaultGrant` applies to objects of a kind
+within a schema. By default, a `DefaultGrant` also implies the equivalent `Grant` on
+objects of that kind which already exist (see `Grants(default_grants_imply_grants=...)`).
+
+```python
+from sqlalchemy_declarative_extensions import Grants
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    DefaultGrant,
+    Grant,
+    GrantTypes,
+)
+
+grants = Grants().are(
+    Grant.new("select", to="read").on_tables("foo", "foo_view"),
+    Grant.new("usage", to="read").on_sequences("foo_id_seq"),
+    Grant.new("usage", to="read").on_schemas("public"),
+    Grant.new("execute", to="read").on_objects("fn", object_type=GrantTypes.function),
+    Grant.new("usage", to="read").on_objects("mood", object_type=GrantTypes.type),
+    DefaultGrant.on_functions_in_schema("public").grant("execute", to="read"),
+)
+```
+
+- `on_tables`: tables, partitioned tables, views, materialized views and foreign tables.
+- `on_sequences`: sequences.
+- `on_schemas`: schemas. Grants on the `public` schema are only compared when a grant on
+  it is declared, so removing the last such grant does not revoke anything.
+- `GrantTypes.function`: functions (not procedures or aggregates).
+- `GrantTypes.type`: enum, domain and range types.
+
+`to="PUBLIC"` (in any case) grants to every role.
+
+```{note}
+Overloaded functions (several functions sharing a name in one schema) are not compared,
+and a `DefaultGrant` does not imply grants on them, because a grant on them by name alone
+would be ambiguous.
+```
+
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.grant.base
    :members: Grants
