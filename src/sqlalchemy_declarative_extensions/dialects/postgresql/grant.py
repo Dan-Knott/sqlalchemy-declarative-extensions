@@ -31,7 +31,7 @@ GRANT { USAGE | ALL [ PRIVILEGES ] }
 from __future__ import annotations
 
 import itertools
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Generic
 
 from sqlalchemy import MetaData
@@ -55,12 +55,14 @@ class Grant(TableItem, Generic[G]):
     """A grant of privileges to a role.
 
     Declared in a table's `__table_args__`, it is granted on that table.
+    When `to` is a `Role` object, rather than a name, that role is registered as well.
     """
 
     grants: tuple[str | G, ...]
     target_role: str
     grant_option: bool = False
     revoke_: bool = False
+    role: HasName | None = field(default=None, compare=False, repr=False)
 
     @classmethod
     def new(
@@ -74,6 +76,7 @@ class Grant(TableItem, Generic[G]):
             grants=tuple(sorted([grant, *grants])),  # type: ignore
             target_role=_coerce_role_name(to),
             grant_option=grant_option,
+            role=_coerce_role(to),
         )
 
     def attach(self, metadata: MetaData, table_name: str) -> None:
@@ -174,6 +177,7 @@ class DefaultGrant:
                 ),
                 target_role=_coerce_role_name(to),
                 grant_option=grant_option,
+                role=_coerce_role(to),
             )
         return DefaultGrantStatement(self, grant)
 
@@ -398,3 +402,9 @@ def _coerce_role_name(role: str | HasName) -> str:
     if name.upper() == PUBLIC:
         return PUBLIC
     return name
+
+
+def _coerce_role(role: str | HasName) -> HasName | None:
+    if isinstance(role, str):
+        return None
+    return role

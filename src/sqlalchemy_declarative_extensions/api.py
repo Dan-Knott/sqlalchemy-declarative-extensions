@@ -226,7 +226,6 @@ def register_create_events(
     from sqlalchemy_declarative_extensions.view.ddl import view_ddl
 
     concrete_schemas = metadata.info.get("schemas") or Schemas()
-    concrete_roles = metadata.info.get("roles") or Roles()
     concrete_views = Views.extract(metadata) or Views()
     concrete_procedures = metadata.info.get("procedures") or Procedures()
     concrete_functions = Functions.extract(metadata) or Functions()
@@ -255,7 +254,9 @@ def register_create_events(
         event.listen(
             metadata,
             "before_create",
-            role_ddl(concrete_roles, role_filter),
+            _at_event_time(
+                lambda m: role_ddl(Roles.extract(m) or Roles(), role_filter)
+            ),
         )
 
     if grants:
@@ -265,7 +266,7 @@ def register_create_events(
             _at_event_time(
                 lambda m: grant_ddl(
                     Grants.extract(m) or Grants(),
-                    concrete_roles,
+                    Roles.extract(m),
                     object_grants=False,
                 )
             ),
@@ -310,7 +311,7 @@ def register_create_events(
             metadata,
             "after_create",
             _at_event_time(
-                lambda m: grant_ddl(Grants.extract(m) or Grants(), concrete_roles)
+                lambda m: grant_ddl(Grants.extract(m) or Grants(), Roles.extract(m))
             ),
         )
 
