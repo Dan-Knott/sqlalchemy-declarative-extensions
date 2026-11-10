@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.20
+
+### 0.20.0
+
+- feat: Declare a Grant in a table's __table_args__, and add register_grant
+- feat: Manage any Role object a grant is given, as though declared in Roles
+- feat: Attach grants and triggers declared in a view's __table_args__
+- feat: Manage grants on functions and types (enums, domains, ranges)
+- fix: Apply grants on tables and views after they are created
+- fix: Detect grants on materialized views, partitioned and foreign tables
+- fix: Detect existing grants on the public schema
+- fix: Render grants to PUBLIC unquoted, and compare them when declared
+- fix: Compare explicitly declared grants without implied grants
+- fix: (Postgres) Read a role's inherit option back from the database
+- fix: Keep use_role/external when converting a generic Role
+- fix: Quote ALTER ROLE as use_role, and space CREATE ROLE IN ROLE
+
 ## 0.19
 
 ### 0.19.0
