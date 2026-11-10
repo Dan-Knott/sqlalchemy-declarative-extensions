@@ -68,7 +68,8 @@ def compare_grants(
     default_grant_ops = compare_default_grants(connection, grants, roles=filtered_roles)
     result.extend(default_grant_ops)
 
-    if object_grants and grants.default_grants_imply_grants:
+    has_object_grants = any(isinstance(grant, GrantStatement) for grant in grants)
+    if object_grants and (grants.default_grants_imply_grants or has_object_grants):
         grant_ops = compare_object_grants(
             connection, grants, username=current_role, roles=filtered_roles
         )
@@ -114,35 +115,16 @@ def compare_object_grants(
 ):
     result: list[Operation] = []
 
-    expected_grants = [
+    expected_grants = {
         sub_g
         for grant in grants
+        if isinstance(grant, GrantStatement)
         for sub_g in grant.explode()
-        if isinstance(sub_g, GrantStatement)
-    ]
-
-    existing_tables = get_objects(connection)
-    existing_tables_by_schema = {
-        s: list(g) for s, g in groupby(existing_tables, lambda r: r[0])
     }
-    for grant in grants:
-        if not isinstance(grant, DefaultGrantStatement):
-            continue
 
-        grant_type = grant.default_grant.grant_type.to_grant_type()
-
-        for schema in grant.default_grant.in_schemas:
-            existing_tables_in_schema = existing_tables_by_schema.get(schema)
-            if not existing_tables_in_schema:
-                continue
-
-            for _, table, relkind in existing_tables_in_schema:
-                object_type = GrantTypes.from_relkind(relkind)
-
-                if object_type == grant_type:
-                    expected_grants.extend(
-                        grant.grant.on_objects(table, object_type=object_type).explode()
-                    )
+    implied_grants = _implied_grants(connection, grants)
+    if grants.default_grants_imply_grants:
+        expected_grants |= implied_grants
 
     targets_public_schema = any(
         isinstance(grant, GrantStatement)
@@ -159,8 +141,8 @@ def compare_object_grants(
             g for g in existing_grants if g.grant.target_role != username
         ]
 
-    missing_grants = set(expected_grants) - set(existing_grants)
-    extra_grants = set(existing_grants) - set(expected_grants)
+    missing_grants = expected_grants - set(existing_grants)
+    extra_grants = set(existing_grants) - expected_grants - implied_grants
 
     if not grants.ignore_unspecified:
         for grant in GrantStatement.combine(list(extra_grants)):
@@ -168,5 +150,32 @@ def compare_object_grants(
 
     for grant in GrantStatement.combine(list(missing_grants)):
         result.append(GrantPrivilegesOp(grant))
+
+    return result
+
+
+def _implied_grants(connection: Connection, grants: Grants) -> set[GrantStatement]:
+    default_grants = [g for g in grants if isinstance(g, DefaultGrantStatement)]
+    if not default_grants:
+        return set()
+
+    existing_objects = get_objects(connection)
+    existing_objects_by_schema = {
+        s: list(g) for s, g in groupby(existing_objects, lambda r: r[0])
+    }
+
+    result: set[GrantStatement] = set()
+    for grant in default_grants:
+        grant_type = grant.default_grant.grant_type.to_grant_type()
+
+        for schema in grant.default_grant.in_schemas:
+            for _, name, relkind in existing_objects_by_schema.get(schema, []):
+                object_type = GrantTypes.from_relkind(relkind)
+                if object_type != grant_type:
+                    continue
+
+                result.update(
+                    grant.grant.on_objects(name, object_type=object_type).explode()
+                )
 
     return result
